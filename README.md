@@ -61,4 +61,3 @@ Desarrollar una plataforma sencilla que conecte pacientes con profesionales de l
 
 ---
 
-Proyecto desarrollado para el curso de **Desarrollo Basado en Plataformas (DBP)**.
