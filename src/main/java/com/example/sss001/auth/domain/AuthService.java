@@ -4,6 +4,8 @@ import com.example.sss001.auth.components.JwtService;
 import com.example.sss001.auth.dto.SignInRequest;
 import com.example.sss001.auth.dto.SignUpRequest;
 import com.example.sss001.auth.dto.TokenResponse;
+import com.example.sss001.patient.domain.Patient;
+import com.example.sss001.patient.infrastructure.PatientRepository;
 import com.example.sss001.user.domain.CustomUserDetailsService;
 import com.example.sss001.user.domain.User;
 import com.example.sss001.user.infrastructure.UserRepository;
@@ -22,6 +24,7 @@ public class AuthService {
     private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(
@@ -29,12 +32,14 @@ public class AuthService {
             CustomUserDetailsService userDetailsService,
             JwtService jwtService,
             UserRepository userRepository,
+            PatientRepository patientRepository,
             PasswordEncoder passwordEncoder) {
 
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.patientRepository = patientRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -88,6 +93,14 @@ public class AuthService {
         // Todo registro público comienza como paciente
         user.setRole("PATIENT");
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Se crea automáticamente el perfil de Patient asociado,
+        // para que el usuario pueda pedir citas de inmediato.
+        Patient patient = new Patient();
+        patient.setUser(savedUser);
+        patientRepository.save(patient);
+
+        return savedUser;
     }
 }
