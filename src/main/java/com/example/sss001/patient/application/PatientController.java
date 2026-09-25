@@ -6,6 +6,7 @@ import com.example.sss001.patient.domain.PatientService;
 import com.example.sss001.patient.dto.PatientDTO;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +29,25 @@ public class PatientController {
                 .stream()
                 .map(this::convertToDTO)
                 .toList();
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PATIENT')")
+    public PatientDTO getOwnInformation(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        Patient patient =
+                service.findByUserEmail(email);
+
+        if (patient == null) {
+            throw new ResourceNotFoundException(
+                    "Paciente no encontrado"
+            );
+        }
+
+        return convertToDTO(patient);
     }
 
     @GetMapping("/{id}")

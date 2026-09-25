@@ -16,6 +16,7 @@ import com.example.sss001.availability.domain.Availability;
 import com.example.sss001.availability.domain.AvailabilityService;
 import com.example.sss001.exceptions.ResourceNotFoundException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -103,6 +104,7 @@ public class AppointmentController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PATIENT')")
     public AppointmentDTO save(
             @RequestBody CreateAppointmentRequest request,

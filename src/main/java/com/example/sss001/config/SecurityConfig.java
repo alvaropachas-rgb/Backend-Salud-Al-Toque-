@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -101,19 +102,13 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
-                                "/medical-services/**"
+                                HttpMethod.GET, "/medical-services/**"
                         ).permitAll()
 
-                        .requestMatchers(
-                                "/availabilities/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/availabilities/**").permitAll()
 
                         .requestMatchers(
                                 "/reviews/**"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                "/favorites/**"
                         ).permitAll()
 
                         // ===============================
