@@ -2,9 +2,6 @@ package com.example.sss001.appointment.dto;
 
 import lombok.*;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,22 +9,12 @@ import java.time.LocalTime;
 public class AppointmentDTO {
 
     private Long id;
-
-    private LocalDate date;
-
-    private LocalTime time;
-
+    private String date;
+    private String time;
     private String status;
-
     private String notes;
-
     private Double price;
-
     private Long patientId;
-
-    private String patientName;
-
     private Long professionalId;
-
-    private String professionalName;
+    private Long medicalServiceId;
 }

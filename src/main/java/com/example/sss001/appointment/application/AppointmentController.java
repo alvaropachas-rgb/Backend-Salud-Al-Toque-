@@ -4,16 +4,25 @@ import com.example.sss001.appointment.domain.Appointment;
 import com.example.sss001.appointment.domain.AppointmentService;
 import com.example.sss001.appointment.dto.AppointmentDTO;
 import com.example.sss001.appointment.dto.CreateAppointmentRequest;
+import com.example.sss001.exceptions.ConflictException;
+import com.example.sss001.exceptions.ForbiddenException;
 import com.example.sss001.patient.domain.Patient;
 import com.example.sss001.patient.domain.PatientService;
 import com.example.sss001.professional.domain.Professional;
 import com.example.sss001.professional.domain.ProfessionalService;
-import org.springframework.http.HttpStatus;
+import com.example.sss001.medicalservice.domain.MedicalService;
+import com.example.sss001.medicalservice.domain.MedicalServiceManager;
+import com.example.sss001.availability.domain.Availability;
+import com.example.sss001.availability.domain.AvailabilityService;
+import com.example.sss001.exceptions.ResourceNotFoundException;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -23,20 +32,26 @@ public class AppointmentController {
     private final AppointmentService service;
     private final PatientService patientService;
     private final ProfessionalService professionalService;
+    private final MedicalServiceManager medicalServiceManager;
+    private final AvailabilityService availabilityService;
 
     public AppointmentController(
             AppointmentService service,
             PatientService patientService,
-            ProfessionalService professionalService) {
+            ProfessionalService professionalService,
+            MedicalServiceManager medicalServiceManager,
+            AvailabilityService availabilityService) {
 
         this.service = service;
         this.patientService = patientService;
         this.professionalService = professionalService;
+        this.medicalServiceManager = medicalServiceManager;
+        this.availabilityService = availabilityService;
     }
 
-
+    // =========================================================
     // ADMIN
-
+    // =========================================================
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -70,7 +85,9 @@ public class AppointmentController {
                 .toList();
     }
 
+    // =========================================================
     // PACIENTE
+    // =========================================================
 
     @GetMapping("/my-appointments")
     @PreAuthorize("hasRole('PATIENT')")
@@ -91,66 +108,200 @@ public class AppointmentController {
             @RequestBody CreateAppointmentRequest request,
             Authentication authentication) {
 
-        // Obtener el correo del usuario autenticado
         String email = authentication.getName();
 
-        // Buscar automáticamente al paciente
-        Patient patient = patientService.findByUserEmail(email);
+        Patient patient =
+                patientService.findByUserEmail(email);
 
         if (patient == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
+            throw new ResourceNotFoundException(
                     "Paciente no encontrado"
             );
         }
 
-        // Buscar al profesional seleccionado
-        Professional professional =
-                professionalService.findById(request.getProfessionalId());
+        // -------------------------------------------------
+        // BUSCAR SERVICIO MÉDICO
+        // -------------------------------------------------
 
-        if (professional == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Profesional no encontrado"
+        MedicalService medicalService =
+                medicalServiceManager.findById(
+                        request.getMedicalServiceId()
+                );
+
+        if (medicalService == null) {
+            throw new ResourceNotFoundException(
+                    "Servicio médico no encontrado"
             );
         }
 
-        // Evitar doble reserva: ¿ya hay una cita activa para este
-        // profesional en esa fecha y hora?
-        boolean slotTaken = service.isSlotTaken(
-                professional.getId(),
-                request.getDate(),
+        // -------------------------------------------------
+        // OBTENER PROFESIONAL
+        // -------------------------------------------------
+
+        Professional professional =
+                medicalService.getProfessional();
+
+        if (professional == null) {
+            throw new ResourceNotFoundException(
+                    "El servicio no tiene un profesional asociado"
+            );
+        }
+
+        // -------------------------------------------------
+        // VALIDAR FECHA
+        // -------------------------------------------------
+
+        LocalDate appointmentDate;
+
+        try {
+            appointmentDate =
+                    LocalDate.parse(request.getDate());
+
+        } catch (Exception e) {
+
+            throw new ConflictException(
+                    "La fecha debe tener formato YYYY-MM-DD"
+            );
+        }
+
+        // -------------------------------------------------
+        // VALIDAR HORA
+        // -------------------------------------------------
+
+        LocalTime appointmentTime;
+
+        try {
+            appointmentTime =
+                    LocalTime.parse(request.getTime());
+
+        } catch (Exception e) {
+
+            throw new ConflictException(
+                    "La hora debe tener formato HH:mm"
+            );
+        }
+
+        // -------------------------------------------------
+        // OBTENER DÍA DE LA SEMANA
+        // -------------------------------------------------
+
+        String dayOfWeek =
+                obtenerDiaEnEspanol(
+                        appointmentDate.getDayOfWeek()
+                );
+
+        // -------------------------------------------------
+        // BUSCAR HORARIOS DEL PROFESIONAL
+        // -------------------------------------------------
+
+        List<Availability> availabilities =
+                availabilityService
+                        .findByProfessionalAndDay(
+                                professional.getId(),
+                                dayOfWeek
+                        );
+
+        // -------------------------------------------------
+        // COMPROBAR DISPONIBILIDAD
+        // -------------------------------------------------
+
+        boolean available = false;
+
+        for (Availability availability : availabilities) {
+
+            LocalTime start =
+                    LocalTime.parse(
+                            availability.getStartTime()
+                    );
+
+            LocalTime end =
+                    LocalTime.parse(
+                            availability.getEndTime()
+                    );
+
+            if (!appointmentTime.isBefore(start)
+                    && appointmentTime.isBefore(end)) {
+
+                available = true;
+                break;
+            }
+        }
+
+        if (!available) {
+
+            throw new ConflictException(
+                    "El profesional no está disponible en esa fecha y hora"
+            );
+        }
+
+        // -------------------------------------------------
+        // COMPROBAR SI YA ESTÁ RESERVADO
+        // -------------------------------------------------
+
+        boolean alreadyBooked =
+                service.existsByProfessionalAndDateAndTime(
+                        professional.getId(),
+                        request.getDate(),
+                        request.getTime()
+                );
+
+        if (alreadyBooked) {
+
+            throw new ConflictException(
+                    "El horario seleccionado ya está reservado"
+            );
+        }
+
+        // -------------------------------------------------
+        // CREAR CITA
+        // -------------------------------------------------
+
+        Appointment appointment =
+                new Appointment();
+
+        appointment.setDate(
+                request.getDate()
+        );
+
+        appointment.setTime(
                 request.getTime()
         );
 
-        if (slotTaken) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Ese horario ya no está disponible para este profesional"
-            );
-        }
+        appointment.setNotes(
+                request.getNotes()
+        );
 
-        // Crear la cita
-        Appointment appointment = new Appointment();
+        appointment.setStatus(
+                "PENDIENTE"
+        );
 
-        appointment.setDate(request.getDate());
-        appointment.setTime(request.getTime());
-        appointment.setNotes(request.getNotes());
+        appointment.setPatient(
+                patient
+        );
 
-        // Datos controlados por el servidor
-        appointment.setStatus("PENDIENTE");
-        appointment.setPrice(professional.getPrice());
+        appointment.setProfessional(
+                professional
+        );
 
-        // Relaciones
-        appointment.setPatient(patient);
-        appointment.setProfessional(professional);
+        appointment.setMedicalService(
+                medicalService
+        );
 
-        Appointment saved = service.save(appointment);
+        // Guardamos el precio actual del servicio
+        // como snapshot de la cita.
+        appointment.setPrice(
+                medicalService.getPrice()
+        );
+
+        Appointment saved =
+                service.save(appointment);
 
         return convertToDTO(saved);
     }
 
+    // =========================================================
     // PROFESIONAL
+    // =========================================================
 
     @GetMapping("/my-professional-appointments")
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -165,18 +316,20 @@ public class AppointmentController {
                 .toList();
     }
 
+    // =========================================================
     // CONSULTA INDIVIDUAL
+    // =========================================================
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public AppointmentDTO findById(
             @PathVariable Long id) {
 
-        Appointment appointment = service.findById(id);
+        Appointment appointment =
+                service.findById(id);
 
         if (appointment == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
+            throw new ResourceNotFoundException(
                     "Cita no encontrada"
             );
         }
@@ -184,49 +337,265 @@ public class AppointmentController {
         return convertToDTO(appointment);
     }
 
+    // =========================================================
+    // CAMBIAR ESTADO - ACEPTAR
+    // =========================================================
+
+    @PatchMapping("/{id}/accept")
+    @PreAuthorize("hasRole('PROFESSIONAL')")
+    public AppointmentDTO accept(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        Professional professional =
+                professionalService.findByUserEmail(
+                        authentication.getName()
+                );
+
+        if (professional == null) {
+            throw new ResourceNotFoundException(
+                    "Profesional no encontrado"
+            );
+        }
+
+        Appointment appointment =
+                service.findById(id);
+
+        if (appointment == null) {
+            throw new ResourceNotFoundException(
+                    "Cita no encontrada"
+            );
+        }
+
+        verificarPropietario(
+                appointment,
+                professional
+        );
+
+        if (!"PENDIENTE".equals(
+                appointment.getStatus())) {
+
+            throw new ConflictException(
+                    "Solo se pueden aceptar citas pendientes"
+            );
+        }
+
+        appointment.setStatus("ACEPTADA");
+
+        Appointment updated =
+                service.save(appointment);
+
+        return convertToDTO(updated);
+    }
+
+    // =========================================================
+    // CAMBIAR ESTADO - RECHAZAR
+    // =========================================================
+
+    @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasRole('PROFESSIONAL')")
+    public AppointmentDTO reject(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        Professional professional =
+                professionalService.findByUserEmail(
+                        authentication.getName()
+                );
+
+        if (professional == null) {
+            throw new ResourceNotFoundException(
+                    "Profesional no encontrado"
+            );
+        }
+
+        Appointment appointment =
+                service.findById(id);
+
+        if (appointment == null) {
+            throw new ResourceNotFoundException(
+                    "Cita no encontrada"
+            );
+        }
+
+        verificarPropietario(
+                appointment,
+                professional
+        );
+
+        if (!"PENDIENTE".equals(
+                appointment.getStatus())) {
+
+            throw new ConflictException(
+                    "Solo se pueden rechazar citas pendientes"
+            );
+        }
+
+        appointment.setStatus("RECHAZADA");
+
+        Appointment updated =
+                service.save(appointment);
+
+        return convertToDTO(updated);
+    }
+
+    // =========================================================
+    // CAMBIAR ESTADO - COMPLETAR
+    // =========================================================
+
+    @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasRole('PROFESSIONAL')")
+    public AppointmentDTO complete(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        Professional professional =
+                professionalService.findByUserEmail(
+                        authentication.getName()
+                );
+
+        if (professional == null) {
+            throw new ResourceNotFoundException(
+                    "Profesional no encontrado"
+            );
+        }
+
+        Appointment appointment =
+                service.findById(id);
+
+        if (appointment == null) {
+            throw new ResourceNotFoundException(
+                    "Cita no encontrada"
+            );
+        }
+
+        verificarPropietario(
+                appointment,
+                professional
+        );
+
+        if (!"ACEPTADA".equals(
+                appointment.getStatus())) {
+
+            throw new ConflictException(
+                    "Solo se pueden completar citas aceptadas"
+            );
+        }
+
+        appointment.setStatus("COMPLETADA");
+
+        Appointment updated =
+                service.save(appointment);
+
+        return convertToDTO(updated);
+    }
+
+    // =========================================================
     // DELETE
+    // =========================================================
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
+    public void delete(
+            @PathVariable Long id) {
+
+        Appointment appointment =
+                service.findById(id);
+
+        if (appointment == null) {
+            throw new ResourceNotFoundException(
+                    "Cita no encontrada"
+            );
+        }
 
         service.delete(id);
     }
 
-    // CONVERSIÓN ENTITY -> DTO
+    // =========================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================
 
-    private AppointmentDTO convertToDTO(Appointment appointment) {
+    private void verificarPropietario(
+            Appointment appointment,
+            Professional professional) {
 
-        AppointmentDTO dto = new AppointmentDTO();
+        if (appointment.getProfessional() == null
+                || !appointment.getProfessional()
+                .getId()
+                .equals(professional.getId())) {
 
-        dto.setId(appointment.getId());
-        dto.setDate(appointment.getDate());
-        dto.setTime(appointment.getTime());
-        dto.setStatus(appointment.getStatus());
-        dto.setNotes(appointment.getNotes());
-        dto.setPrice(appointment.getPrice());
+            throw new ForbiddenException(
+                    "No puedes modificar una cita de otro profesional"
+            );
+        }
+    }
+
+    private String obtenerDiaEnEspanol(
+            DayOfWeek day) {
+
+        return switch (day) {
+
+            case MONDAY ->
+                    "LUNES";
+
+            case TUESDAY ->
+                    "MARTES";
+
+            case WEDNESDAY ->
+                    "MIERCOLES";
+
+            case THURSDAY ->
+                    "JUEVES";
+
+            case FRIDAY ->
+                    "VIERNES";
+
+            case SATURDAY ->
+                    "SABADO";
+
+            case SUNDAY ->
+                    "DOMINGO";
+        };
+    }
+
+    // =========================================================
+    // ENTITY -> DTO
+    // =========================================================
+
+    private AppointmentDTO convertToDTO(
+            Appointment appointment) {
+
+        Long patientId = null;
 
         if (appointment.getPatient() != null) {
-            dto.setPatientId(appointment.getPatient().getId());
-
-            if (appointment.getPatient().getUser() != null) {
-                dto.setPatientName(
-                        appointment.getPatient().getUser().getName()
-                );
-            }
+            patientId =
+                    appointment.getPatient().getId();
         }
+
+        Long professionalId = null;
 
         if (appointment.getProfessional() != null) {
-            dto.setProfessionalId(
-                    appointment.getProfessional().getId()
-            );
-
-            if (appointment.getProfessional().getUser() != null) {
-                dto.setProfessionalName(
-                        appointment.getProfessional().getUser().getName()
-                );
-            }
+            professionalId =
+                    appointment.getProfessional().getId();
         }
-        return dto;
+
+        Long medicalServiceId = null;
+
+        if (appointment.getMedicalService() != null) {
+            medicalServiceId =
+                    appointment.getMedicalService().getId();
+        }
+
+        return new AppointmentDTO(
+                appointment.getId(),
+                appointment.getDate(),
+                appointment.getTime(),
+                appointment.getStatus(),
+                appointment.getNotes(),
+                appointment.getPrice(),
+                patientId,
+                professionalId,
+                medicalServiceId
+        );
     }
 }

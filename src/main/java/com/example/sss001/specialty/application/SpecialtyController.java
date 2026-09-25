@@ -1,5 +1,6 @@
 package com.example.sss001.specialty.application;
 
+import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.specialty.domain.Specialty;
 import com.example.sss001.specialty.domain.SpecialtyService;
 import com.example.sss001.specialty.dto.SpecialtyDTO;
@@ -15,7 +16,9 @@ public class SpecialtyController {
 
     private final SpecialtyService service;
 
-    public SpecialtyController(SpecialtyService service) {
+    public SpecialtyController(
+            SpecialtyService service) {
+
         this.service = service;
     }
 
@@ -32,10 +35,14 @@ public class SpecialtyController {
     public SpecialtyDTO findById(
             @PathVariable Long id) {
 
-        Specialty specialty = service.findById(id);
+        Specialty specialty =
+                service.findById(id);
 
         if (specialty == null) {
-            return null;
+
+            throw new ResourceNotFoundException(
+                    "Especialidad no encontrada"
+            );
         }
 
         return convertToDTO(specialty);
@@ -46,15 +53,26 @@ public class SpecialtyController {
     public SpecialtyDTO save(
             @RequestBody Specialty specialty) {
 
-        return convertToDTO(
-                service.save(specialty)
-        );
+        Specialty saved =
+                service.save(specialty);
+
+        return convertToDTO(saved);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(
             @PathVariable Long id) {
+
+        Specialty specialty =
+                service.findById(id);
+
+        if (specialty == null) {
+
+            throw new ResourceNotFoundException(
+                    "Especialidad no encontrada"
+            );
+        }
 
         service.delete(id);
     }

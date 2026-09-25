@@ -3,15 +3,15 @@ package com.example.sss001.auth.components;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-@Service
+@Component
 public class JwtService {
 
     @Value("${jwt.secret}")
@@ -27,10 +27,14 @@ public class JwtService {
         );
     }
 
-    public String generateToken(UserDetails userDetails) {
+    // =========================================================
+    // GENERAR TOKEN
+    // =========================================================
+
+    public String generateToken(String email) {
 
         return Jwts.builder()
-                .subject(userDetails.getUsername())
+                .subject(email)
                 .issuedAt(new Date())
                 .expiration(
                         new Date(
@@ -42,24 +46,39 @@ public class JwtService {
                 .compact();
     }
 
+    // =========================================================
+    // EXTRAER EMAIL
+    // =========================================================
+
     public String extractUsername(String token) {
 
-        return getClaims(token).getSubject();
+        return getClaims(token)
+                .getSubject();
     }
+
+    // =========================================================
+    // VALIDAR TOKEN
+    // =========================================================
 
     public boolean isTokenValid(String token) {
 
         try {
 
-            Claims claims = getClaims(token);
+            Claims claims =
+                    getClaims(token);
 
             return !claims.getExpiration()
                     .before(new Date());
 
         } catch (Exception e) {
+
             return false;
         }
     }
+
+    // =========================================================
+    // OBTENER CLAIMS
+    // =========================================================
 
     private Claims getClaims(String token) {
 

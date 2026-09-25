@@ -1,23 +1,30 @@
 package com.example.sss001.auth.components;
 
 import com.example.sss001.user.domain.CustomUserDetailsService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+
 import org.springframework.stereotype.Component;
+
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
 @Component
-public class JwtAuthorizationFilter extends OncePerRequestFilter {
+public class JwtAuthorizationFilter
+        extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+
     private final CustomUserDetailsService userDetailsService;
 
     public JwtAuthorizationFilter(
@@ -35,31 +42,73 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String authorizationHeader =
+                request.getHeader("Authorization");
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+        // -------------------------------------------------
+        // NO HAY TOKEN
+        // -------------------------------------------------
 
-            filterChain.doFilter(request, response);
+        if (authorizationHeader == null
+                || !authorizationHeader.startsWith("Bearer ")) {
+
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
             return;
         }
 
-        String token = authHeader.substring(7);
+        String token =
+                authorizationHeader.substring(7);
+
+        // -------------------------------------------------
+        // TOKEN INVÁLIDO
+        // -------------------------------------------------
 
         if (!jwtService.isTokenValid(token)) {
 
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
             return;
         }
 
-        String email = jwtService.extractUsername(token);
+        // -------------------------------------------------
+        // OBTENER EMAIL
+        // -------------------------------------------------
 
-        if (email != null &&
-                SecurityContextHolder.getContext()
-                        .getAuthentication() == null) {
+        String email;
+
+        try {
+
+            email =
+                    jwtService.extractUsername(token);
+
+        } catch (Exception e) {
+
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // EVITAR SOBRESCRIBIR AUTENTICACIÓN
+        // -------------------------------------------------
+
+        if (SecurityContextHolder
+                .getContext()
+                .getAuthentication() == null) {
 
             UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(email);
+                    userDetailsService
+                            .loadUserByUsername(email);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -73,10 +122,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                             .buildDetails(request)
             );
 
-            SecurityContextHolder.getContext()
+            SecurityContextHolder
+                    .getContext()
                     .setAuthentication(authentication);
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(
+                request,
+                response
+        );
     }
 }

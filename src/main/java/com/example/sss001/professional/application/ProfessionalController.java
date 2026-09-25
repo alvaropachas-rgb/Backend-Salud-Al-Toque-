@@ -1,12 +1,16 @@
 package com.example.sss001.professional.application;
 
+import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.professional.domain.Professional;
 import com.example.sss001.professional.domain.ProfessionalService;
 import com.example.sss001.professional.dto.ProfessionalDTO;
-import org.springframework.http.HttpStatus;
+import com.example.sss001.specialty.domain.Specialty;
+import com.example.sss001.specialty.domain.SpecialtyService;
+import com.example.sss001.user.domain.User;
+import com.example.sss001.user.domain.UserService;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -15,43 +19,52 @@ import java.util.List;
 public class ProfessionalController {
 
     private final ProfessionalService service;
+    private final UserService userService;
+    private final SpecialtyService specialtyService;
 
-    public ProfessionalController(ProfessionalService service) {
+    public ProfessionalController(
+            ProfessionalService service,
+            UserService userService,
+            SpecialtyService specialtyService) {
+
         this.service = service;
+        this.userService = userService;
+        this.specialtyService = specialtyService;
     }
 
-    /*
-     * GET /professionals
-     * GET /professionals?specialty=Cardiologia
-     * GET /professionals?specialty=Dermatologia
-     * */
+    // ---------------------------------------------------------
+    // VER PROFESIONALES - PÚBLICO
+    // ---------------------------------------------------------
 
     @GetMapping
     public List<ProfessionalDTO> findAll(
-            @RequestParam(required = false) String specialty) {
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Double maxPrice) {
 
-        List<Professional> professionals;
-
-        if (specialty == null || specialty.isBlank()) {
-            professionals = service.findAll();
-        } else {
-            professionals = service.findBySpecialty(specialty);
-        }
-
-        return professionals
+        return service.search(
+                        specialty,
+                        location,
+                        maxPrice
+                )
                 .stream()
                 .map(this::convertToDTO)
                 .toList();
     }
 
-    @GetMapping("/{id}")
-    public ProfessionalDTO findById(@PathVariable Long id) {
+    // ---------------------------------------------------------
+    // VER PROFESIONAL - PÚBLICO
+    // ---------------------------------------------------------
 
-        Professional professional = service.findById(id);
+    @GetMapping("/{id}")
+    public ProfessionalDTO findById(
+            @PathVariable Long id) {
+
+        Professional professional =
+                service.findById(id);
 
         if (professional == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
+            throw new ResourceNotFoundException(
                     "Profesional no encontrado"
             );
         }
@@ -59,36 +72,194 @@ public class ProfessionalController {
         return convertToDTO(professional);
     }
 
-    // TODO: cuando exista el flujo de "crear perfil profesional"
-    // (Persona 1 / MVP), este endpoint deberá permitir también
-    // que el propio profesional actualice su perfil, no solo el ADMIN.
+    // ---------------------------------------------------------
+    // CREAR - SOLO ADMIN
+    // ---------------------------------------------------------
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Professional save(@RequestBody Professional professional) {
-        return service.save(professional);
+    public ProfessionalDTO save(
+            @RequestBody Professional professional) {
+
+        if (professional.getUser() == null ||
+                professional.getUser().getId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Debe indicar el usuario del profesional"
+            );
+        }
+
+        User user =
+                userService.findById(
+                        professional.getUser().getId()
+                );
+
+        if (user == null) {
+            throw new ResourceNotFoundException(
+                    "Usuario no encontrado"
+            );
+        }
+
+        if (!"PROFESSIONAL".equals(user.getRole())) {
+            throw new IllegalArgumentException(
+                    "El usuario debe tener rol PROFESSIONAL"
+            );
+        }
+
+        professional.setUser(user);
+
+        if (professional.getSpecialty() != null &&
+                professional.getSpecialty().getId() != null) {
+
+            Specialty specialty =
+                    specialtyService.findById(
+                            professional.getSpecialty().getId()
+                    );
+
+            if (specialty == null) {
+                throw new ResourceNotFoundException(
+                        "Especialidad no encontrada"
+                );
+            }
+
+            professional.setSpecialty(specialty);
+        }
+
+        Professional saved =
+                service.save(professional);
+
+        return convertToDTO(saved);
     }
+
+    // ---------------------------------------------------------
+    // ACTUALIZAR - SOLO ADMIN
+    // ---------------------------------------------------------
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProfessionalDTO update(
+            @PathVariable Long id,
+            @RequestBody Professional professional) {
+
+        Professional existing =
+                service.findById(id);
+
+        if (existing == null) {
+            throw new ResourceNotFoundException(
+                    "Profesional no encontrado"
+            );
+        }
+
+        existing.setLocation(
+                professional.getLocation()
+        );
+
+        existing.setRating(
+                professional.getRating()
+        );
+
+        if (professional.getSpecialty() != null &&
+                professional.getSpecialty().getId() != null) {
+
+            Specialty specialty =
+                    specialtyService.findById(
+                            professional.getSpecialty().getId()
+                    );
+
+            if (specialty == null) {
+                throw new ResourceNotFoundException(
+                        "Especialidad no encontrada"
+                );
+            }
+
+            existing.setSpecialty(specialty);
+        }
+
+        Professional updated =
+                service.save(existing);
+
+        return convertToDTO(updated);
+    }
+
+    // ---------------------------------------------------------
+    // ELIMINAR - SOLO ADMIN
+    // ---------------------------------------------------------
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
+    public void delete(
+            @PathVariable Long id) {
+
+        Professional professional =
+                service.findById(id);
+
+        if (professional == null) {
+            throw new ResourceNotFoundException(
+                    "Profesional no encontrado"
+            );
+        }
+
         service.delete(id);
     }
 
-    private ProfessionalDTO convertToDTO(Professional professional) {
+    // ---------------------------------------------------------
+    // DTO
+    // ---------------------------------------------------------
 
-        ProfessionalDTO dto = new ProfessionalDTO();
+    private ProfessionalDTO convertToDTO(
+            Professional professional) {
 
-        dto.setId(professional.getId());
-        if (professional.getSpecialty() != null) {
-            dto.setSpecialty(professional.getSpecialty().getName());
-        }
-        dto.setLocation(professional.getLocation());
-        dto.setPrice(professional.getPrice());
-        dto.setRating(professional.getRating());
+        ProfessionalDTO dto =
+                new ProfessionalDTO();
+
+        dto.setId(
+                professional.getId()
+        );
 
         if (professional.getUser() != null) {
-            dto.setUserId(professional.getUser().getId());
-            dto.setName(professional.getUser().getName());
+
+            dto.setName(
+                    professional.getUser().getName()
+            );
+
+            dto.setUserId(
+                    professional.getUser().getId()
+            );
+        }
+
+        if (professional.getSpecialty() != null) {
+
+            dto.setSpecialty(
+                    professional.getSpecialty().getName()
+            );
+        }
+
+        dto.setLocation(
+                professional.getLocation()
+        );
+
+        dto.setRating(
+                professional.getRating()
+        );
+
+        if (professional.getMedicalServices() != null &&
+                !professional.getMedicalServices().isEmpty()) {
+
+            Double minimumPrice =
+                    professional.getMedicalServices()
+                            .stream()
+                            .map(service ->
+                                    service.getPrice())
+                            .filter(price ->
+                                    price != null)
+                            .min(Double::compareTo)
+                            .orElse(null);
+
+            dto.setPrice(minimumPrice);
+
+        } else {
+
+            dto.setPrice(null);
         }
 
         return dto;

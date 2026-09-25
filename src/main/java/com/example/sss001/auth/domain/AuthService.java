@@ -4,16 +4,15 @@ import com.example.sss001.auth.components.JwtService;
 import com.example.sss001.auth.dto.SignInRequest;
 import com.example.sss001.auth.dto.SignUpRequest;
 import com.example.sss001.auth.dto.TokenResponse;
+
 import com.example.sss001.patient.domain.Patient;
 import com.example.sss001.patient.infrastructure.PatientRepository;
-import com.example.sss001.user.domain.CustomUserDetailsService;
+
 import com.example.sss001.user.domain.User;
 import com.example.sss001.user.infrastructure.UserRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
-    private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
@@ -29,78 +27,112 @@ public class AuthService {
 
     public AuthService(
             AuthenticationManager authenticationManager,
-            CustomUserDetailsService userDetailsService,
             JwtService jwtService,
             UserRepository userRepository,
             PatientRepository patientRepository,
             PasswordEncoder passwordEncoder) {
 
         this.authenticationManager = authenticationManager;
-        this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.patientRepository = patientRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
+    // =========================================================
+    // SIGN IN
+    // =========================================================
 
-    // LOGIN
+    public TokenResponse signIn(
+            SignInRequest request) {
 
-
-    public TokenResponse signIn(SignInRequest request) {
-
-        Authentication authentication =
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                request.getEmail(),
-                                request.getPassword()
-                        )
-                );
-
-        UserDetails userDetails =
-                (UserDetails) authentication.getPrincipal();
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
 
         String token =
-                jwtService.generateToken(userDetails);
+                jwtService.generateToken(
+                        request.getEmail()
+                );
 
         return new TokenResponse(token);
     }
 
+    // =========================================================
+    // SIGN UP
+    // =========================================================
 
-    // REGISTRO
+    public TokenResponse signUp(
+            SignUpRequest request) {
 
-
-    public User signUp(SignUpRequest request) {
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(
+                request.getEmail()
+        ).isPresent()) {
 
             throw new IllegalArgumentException(
-                    "El correo ya está registrado"
+                    "El correo electrónico ya está registrado"
             );
         }
 
-        User user = new User();
+        // -------------------------------------------------
+        // CREAR USER
+        // -------------------------------------------------
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        User user =
+                new User();
 
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword())
+        user.setName(
+                request.getName()
         );
 
-        user.setPhone(request.getPhone());
+        user.setEmail(
+                request.getEmail()
+        );
 
-        // Todo registro público comienza como paciente
-        user.setRole("PATIENT");
+        // IMPORTANTE:
+        // Nunca guardar password directamente.
+        user.setPassword(
+                passwordEncoder.encode(
+                        request.getPassword()
+                )
+        );
 
-        User savedUser = userRepository.save(user);
+        user.setPhone(
+                request.getPhone()
+        );
 
-        // Se crea automáticamente el perfil de Patient asociado,
-        // para que el usuario pueda pedir citas de inmediato.
-        Patient patient = new Patient();
-        patient.setUser(savedUser);
+        user.setRole(
+                "PATIENT"
+        );
+
+        User savedUser =
+                userRepository.save(user);
+
+        // -------------------------------------------------
+        // CREAR PATIENT
+        // -------------------------------------------------
+
+        Patient patient =
+                new Patient();
+
+        patient.setUser(
+                savedUser
+        );
+
         patientRepository.save(patient);
 
-        return savedUser;
+        // -------------------------------------------------
+        // GENERAR JWT
+        // -------------------------------------------------
+
+        String token =
+                jwtService.generateToken(
+                        savedUser.getEmail()
+                );
+
+        return new TokenResponse(token);
     }
 }

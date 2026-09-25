@@ -1,30 +1,33 @@
 package com.example.sss001.user.application;
 
+import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.user.domain.User;
 import com.example.sss001.user.domain.UserService;
 import com.example.sss001.user.dto.UserDTO;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-// Este controller es para administración interna de usuarios.
-// El registro público de usuarios se hace en /auth/signup, no aquí.
-// Por eso todo el CRUD queda restringido a ADMIN.
 @RestController
 @RequestMapping("/users")
-@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
     private final UserService service;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserService service) {
+    public UserController(
+            UserService service,
+            PasswordEncoder passwordEncoder) {
+
         this.service = service;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserDTO> findAll() {
 
         return service.findAll()
@@ -34,13 +37,15 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public UserDTO findById(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDTO findById(
+            @PathVariable Long id) {
 
-        User user = service.findById(id);
+        User user =
+                service.findById(id);
 
         if (user == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
+            throw new ResourceNotFoundException(
                     "Usuario no encontrado"
             );
         }
@@ -49,24 +54,58 @@ public class UserController {
     }
 
     @PostMapping
-    public User save(@RequestBody User user) {
-        return service.save(user);
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDTO save(
+            @RequestBody User user) {
+
+        User saved =
+                service.save(user);
+
+        return convertToDTO(saved);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public void delete(
+            @PathVariable Long id) {
+
+        User user =
+                service.findById(id);
+
+        if (user == null) {
+            throw new ResourceNotFoundException(
+                    "Usuario no encontrado"
+            );
+        }
+
         service.delete(id);
     }
 
-    private UserDTO convertToDTO(User user) {
+    private UserDTO convertToDTO(
+            User user) {
 
-        UserDTO dto = new UserDTO();
+        UserDTO dto =
+                new UserDTO();
 
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole());
+        dto.setId(
+                user.getId()
+        );
+
+        dto.setName(
+                user.getName()
+        );
+
+        dto.setEmail(
+                user.getEmail()
+        );
+
+        dto.setPhone(
+                user.getPhone()
+        );
+
+        dto.setRole(
+                user.getRole()
+        );
 
         return dto;
     }
