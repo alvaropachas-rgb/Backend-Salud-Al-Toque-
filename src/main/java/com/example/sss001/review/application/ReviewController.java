@@ -13,8 +13,13 @@ import com.example.sss001.review.domain.ReviewService;
 import com.example.sss001.review.dto.CreateReviewRequest;
 import com.example.sss001.review.dto.ReviewDTO;
 import com.example.sss001.exceptions.ResourceNotFoundException;
+import com.example.sss001.event.ReviewCreatedEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,21 +29,26 @@ import java.util.List;
 @RequestMapping("/reviews")
 public class ReviewController {
 
+    private static final Logger log = LoggerFactory.getLogger(ReviewController.class);
+
     private final ReviewService service;
     private final AppointmentService appointmentService;
     private final PatientService patientService;
     private final ProfessionalService professionalService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReviewController(
             ReviewService service,
             AppointmentService appointmentService,
             PatientService patientService,
-            ProfessionalService professionalService) {
+            ProfessionalService professionalService,
+            ApplicationEventPublisher eventPublisher) {
 
         this.service = service;
         this.appointmentService = appointmentService;
         this.patientService = patientService;
         this.professionalService = professionalService;
+        this.eventPublisher = eventPublisher;
     }
 
     // =========================================================
@@ -229,6 +239,42 @@ public class ReviewController {
         // -------------------------------------------------
 
         actualizarRating(professional);
+
+        // -------------------------------------------------
+        // PUBLICAR EVENTO DE RESEÑA CREADA
+        // -------------------------------------------------
+
+        String professionalName =
+                professional.getUser() != null
+                        ? professional.getUser().getName()
+                        : "Profesional";
+
+        String professionalEmail =
+                professional.getUser() != null
+                        ? professional.getUser().getEmail()
+                        : null;
+
+        String patientName =
+                patient.getUser() != null
+                        ? patient.getUser().getName()
+                        : "Paciente";
+
+        log.info("EVENT PUBLISH START type=ReviewCreatedEvent reviewId={} thread={}",
+                saved.getId(), Thread.currentThread().getName());
+
+        eventPublisher.publishEvent(
+                new ReviewCreatedEvent(
+                        saved.getId(),
+                        professionalName,
+                        professionalEmail,
+                        patientName,
+                        saved.getRating(),
+                        saved.getComment()
+                )
+        );
+
+        log.info("EVENT PUBLISH END type=ReviewCreatedEvent reviewId={} thread={}",
+                saved.getId(), Thread.currentThread().getName());
 
         return convertToDTO(saved);
     }

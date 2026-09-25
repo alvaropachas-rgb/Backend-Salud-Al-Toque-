@@ -15,8 +15,13 @@ import com.example.sss001.medicalservice.domain.MedicalServiceManager;
 import com.example.sss001.availability.domain.Availability;
 import com.example.sss001.availability.domain.AvailabilityService;
 import com.example.sss001.exceptions.ResourceNotFoundException;
+import com.example.sss001.event.AppointmentCreatedEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -30,24 +35,29 @@ import java.util.List;
 @RequestMapping("/appointments")
 public class AppointmentController {
 
+    private static final Logger log = LoggerFactory.getLogger(AppointmentController.class);
+
     private final AppointmentService service;
     private final PatientService patientService;
     private final ProfessionalService professionalService;
     private final MedicalServiceManager medicalServiceManager;
     private final AvailabilityService availabilityService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AppointmentController(
             AppointmentService service,
             PatientService patientService,
             ProfessionalService professionalService,
             MedicalServiceManager medicalServiceManager,
-            AvailabilityService availabilityService) {
+            AvailabilityService availabilityService,
+            ApplicationEventPublisher eventPublisher) {
 
         this.service = service;
         this.patientService = patientService;
         this.professionalService = professionalService;
         this.medicalServiceManager = medicalServiceManager;
         this.availabilityService = availabilityService;
+        this.eventPublisher = eventPublisher;
     }
 
     // =========================================================
@@ -297,6 +307,53 @@ public class AppointmentController {
 
         Appointment saved =
                 service.save(appointment);
+
+        // -------------------------------------------------
+        // PUBLICAR EVENTO DE CITA CREADA
+        // -------------------------------------------------
+
+        String patientName =
+                patient.getUser() != null
+                        ? patient.getUser().getName()
+                        : "Paciente";
+
+        String patientEmail =
+                patient.getUser() != null
+                        ? patient.getUser().getEmail()
+                        : null;
+
+        String professionalName =
+                professional.getUser() != null
+                        ? professional.getUser().getName()
+                        : "Profesional";
+
+        String professionalEmail =
+                professional.getUser() != null
+                        ? professional.getUser().getEmail()
+                        : null;
+
+        String medicalServiceName =
+                medicalService.getName();
+
+        log.info("EVENT PUBLISH START type=AppointmentCreatedEvent appointmentId={} thread={}",
+                saved.getId(), Thread.currentThread().getName());
+
+        eventPublisher.publishEvent(
+                new AppointmentCreatedEvent(
+                        saved.getId(),
+                        saved.getDate(),
+                        saved.getTime(),
+                        patientName,
+                        patientEmail,
+                        professionalName,
+                        professionalEmail,
+                        medicalServiceName,
+                        saved.getPrice()
+                )
+        );
+
+        log.info("EVENT PUBLISH END type=AppointmentCreatedEvent appointmentId={} thread={}",
+                saved.getId(), Thread.currentThread().getName());
 
         return convertToDTO(saved);
     }

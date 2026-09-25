@@ -140,6 +140,45 @@ Los pacientes pueden registrar reseñas asociadas a una cita completada. Las res
 
 Los pacientes pueden guardar profesionales como favoritos. Se evita que un mismo paciente registre dos veces al mismo profesional como favorito mediante una restricción de unicidad.
 
+### Eventos y procesamiento asíncrono
+
+El backend incorpora eventos de dominio y procesamiento asíncrono para las notificaciones:
+
+- `UserRegisteredEvent`: se publica al registrar un usuario.
+- `AppointmentCreatedEvent`: se publica al crear una cita.
+- `ReviewCreatedEvent`: se publica al registrar una reseña.
+
+El procesamiento asíncrono se habilita mediante `@EnableAsync` y un `ThreadPoolTaskExecutor` dedicado a notificaciones. Los hilos del executor utilizan el prefijo `notification-`.
+
+El flujo de negocio probado es:
+
+```text
+Paciente
+  │
+  ├── Sign Up
+  │     └── UserRegisteredEvent → @Async → correo
+  │
+  ├── Sign In
+  │
+  └── Crear Appointment
+        └── AppointmentCreatedEvent → @Async → correo
+                 │
+                 ▼
+Profesional
+  │
+  ├── Sign In
+  ├── Aceptar Appointment
+  └── Completar Appointment
+                 │
+                 ▼
+Paciente
+  │
+  └── Crear Review
+        └── ReviewCreatedEvent → @Async → correo
+```
+
+La reseña se registra después de que el profesional haya completado la cita.
+
 ---
 
 # 4. Arquitectura del Proyecto
@@ -340,6 +379,26 @@ También pueden combinarse.
 | `GET` | `/appointments` | Consultar citas según permisos |
 | `GET` | `/appointments/{id}` | Obtener cita |
 | `POST` | `/appointments` | Crear cita |
+| `PATCH` | `/appointments/{id}/accept` | Aceptar una cita como profesional |
+| `PATCH` | `/appointments/{id}/complete` | Marcar una cita como completada como profesional |
+
+Las operaciones de aceptación y completado requieren el JWT del profesional:
+
+```text
+Authorization: Bearer <professionalToken>
+```
+
+El flujo es:
+
+```text
+POST /appointments
+        ↓
+PATCH /appointments/{id}/accept
+        ↓
+PATCH /appointments/{id}/complete
+        ↓
+POST /reviews
+```
 
 El acceso a las citas se encuentra protegido para evitar que un paciente consulte información perteneciente a otros usuarios.
 
@@ -467,6 +526,106 @@ También puede ejecutarse directamente desde IntelliJ IDEA.
 
 La aplicación utiliza `data.sql` para cargar datos iniciales de prueba, incluyendo usuarios, profesionales, especialidades, servicios, disponibilidad y una cita inicial.
 
+### Mailpit para desarrollo
+
+Mailpit permite capturar los correos enviados por el backend sin enviarlos a destinatarios reales.
+
+Iniciar Mailpit con Docker:
+
+```bash
+docker run -d \
+  --name mailpit \
+  -p 1025:1025 \
+  -p 8025:8025 \
+  axllent/mailpit
+```
+
+La interfaz web de Mailpit queda disponible en:
+
+```text
+http://localhost:8025
+```
+
+El backend envía los mensajes al SMTP local de Mailpit mediante `localhost:1025`. Esto permite verificar las notificaciones generadas por `UserRegisteredEvent`, `AppointmentCreatedEvent` y `ReviewCreatedEvent`.
+
+
+---
+
+# 11. Eventos y Procesamiento Asíncrono
+
+El backend utiliza Spring para ejecutar los listeners de eventos en segundo plano.
+
+### Eventos implementados
+
+| Evento | Se dispara cuando | Procesamiento |
+|---|---|---|
+| `UserRegisteredEvent` | Se registra un usuario | `@Async` |
+| `AppointmentCreatedEvent` | Se crea una cita | `@Async` |
+| `ReviewCreatedEvent` | Se crea una reseña | `@Async` |
+
+La configuración utiliza un `ThreadPoolTaskExecutor` llamado `notificationExecutor`, con hilos identificables mediante `notification-*`.
+
+En los logs se puede comprobar la separación entre la publicación y el listener:
+
+```text
+EVENT PUBLISH START ... thread=http-nio-...
+EVENT PUBLISH END   ... thread=http-nio-...
+ASYNC EVENT START   ... thread=notification-...
+ASYNC EVENT END     ... thread=notification-...
+```
+
+Esto permite verificar que el procesamiento del evento se ejecuta fuera del hilo HTTP que atendió la solicitud.
+
+---
+
+# 12. Correo de Desarrollo con Mailpit
+
+Mailpit se utiliza como servidor SMTP local durante las pruebas de integración.
+
+### Levantar Mailpit
+
+```bash
+docker run -d \
+  --name mailpit \
+  -p 1025:1025 \
+  -p 8025:8025 \
+  axllent/mailpit
+```
+
+### Acceso
+
+- SMTP: `localhost:1025`
+- Interfaz web: `http://localhost:8025`
+
+Después de iniciar Mailpit y reiniciar el backend, los correos generados por los listeners asíncronos pueden revisarse desde la interfaz web.
+
+### Flujo completo de Postman
+
+La colección de Postman contiene el siguiente proceso:
+
+```text
+1. Backend reachable
+2. Paciente - Sign Up
+3. Paciente - Sign In
+4. Crear Appointment
+5. Verificar Appointment
+6. Profesional - Sign In
+7. Profesional - Accept Appointment
+8. Profesional - Complete Appointment
+9. Paciente - Create Review
+10. Verificar Review
+11. Async Evidence Checklist
+```
+
+Los JWT se mantienen separados:
+
+```text
+token             → JWT del paciente
+professionalToken → JWT del profesional
+```
+
+De esta manera, la colección comprueba tanto la autorización por rol como el flujo de eventos.
+
 ---
 
 # 11. Pruebas
@@ -497,7 +656,7 @@ El objetivo de estas pruebas es verificar tanto el funcionamiento esperado como 
 
 ---
 
-# 12. GitHub y Gestión del Proyecto
+# 14. GitHub y Gestión del Proyecto
 
 El desarrollo del proyecto se realiza mediante Git y GitHub.
 
@@ -512,7 +671,7 @@ La documentación del proyecto se mantiene en `README.md`, mientras que la API s
 
 ---
 
-# 13. Conclusiones y Trabajo Futuro
+# 15. Conclusiones y Trabajo Futuro
 
 ## Logros del Proyecto
 
@@ -533,6 +692,11 @@ Se desarrolló un backend funcional para una plataforma de servicios médicos, i
 - Reseñas.
 - Favoritos.
 - Pruebas automatizadas.
+- Eventos de dominio (`UserRegisteredEvent`, `AppointmentCreatedEvent`, `ReviewCreatedEvent`).
+- Procesamiento asíncrono mediante `@Async`.
+- Notificaciones de desarrollo mediante Mailpit.
+- Flujo de citas: creación, aceptación y completado.
+- Flujo de reseñas posterior a una cita completada.
 
 La solución permite representar las principales operaciones del dominio de Salud al Toque y proporciona una base preparada para ser consumida por una aplicación web o móvil.
 
@@ -546,8 +710,6 @@ También permitió comprender la importancia de separar las entidades de persist
 
 Entre las mejoras previstas se encuentran:
 
-- Implementar eventos de dominio y procesamiento asíncrono.
-- Incorporar servicio de correo electrónico.
 - Añadir refresh tokens.
 - Mejorar las validaciones mediante Bean Validation.
 - Implementar paginación.
@@ -555,13 +717,12 @@ Entre las mejoras previstas se encuentran:
 - Incorporar Swagger/OpenAPI.
 - Configurar CI/CD mediante GitHub Actions.
 - Desplegar el backend en una plataforma cloud.
-- Implementar una colección Postman completa con variables y ejemplos.
 - Mejorar la gestión de permisos mediante `@PreAuthorize`.
 - Incorporar un sistema más completo de administración.
 
 ---
 
-# 14. Apéndices
+# 16. Apéndices
 
 ## A. Licencia
 
@@ -591,6 +752,10 @@ DB_USER
 DB_PASSWORD
 JWT_SECRET
 JWT_EXPIRATION
+MAIL_HOST
+MAIL_PORT
+MAIL_USERNAME
+MAIL_PASSWORD
 ```
 
 No se deben almacenar contraseñas, claves JWT u otras credenciales directamente en el repositorio.
@@ -599,4 +764,4 @@ No se deben almacenar contraseñas, claves JWT u otras credenciales directamente
 
 ## Estado actual del proyecto
 
-El backend se encuentra funcional para las operaciones principales del dominio. Algunos elementos solicitados por la rúbrica, como eventos, procesamiento asíncrono, correo electrónico, deployment cloud, CI/CD y ciertas validaciones avanzadas, quedan identificados como trabajo futuro y podrán incorporarse posteriormente.
+El backend se encuentra funcional para las operaciones principales del dominio. Actualmente incorpora eventos de dominio, procesamiento asíncrono con `@Async`, notificaciones de desarrollo mediante Mailpit, estados de aceptación y completado de citas y una colección Postman para validar el flujo completo de integración. Permanecen como trabajo futuro el deployment cloud, CI/CD y ciertas validaciones avanzadas.
