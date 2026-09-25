@@ -2,7 +2,10 @@ package com.example.sss001.appointment.domain;
 
 import com.example.sss001.appointment.infrastructure.AppointmentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -38,6 +41,22 @@ public class AppointmentService {
         return repository.findByProfessionalUserEmail(email);
     }
 
+    // true si ese profesional ya tiene una cita activa (no cancelada)
+    // en esa fecha y hora exactas.
+    public boolean isSlotTaken(
+            Long professionalId, LocalDate date, LocalTime time) {
+
+        return repository
+                .existsByProfessionalIdAndDateAndTimeAndStatusNot(
+                        professionalId, date, time, "CANCELADA"
+                );
+    }
+
+    // @Transactional para que el chequeo y el guardado ocurran como
+    // una sola operación atómica. La restricción única en la tabla
+    // (ver Appointment.java) es la protección final por si dos
+    // peticiones llegan al mismo tiempo exacto.
+    @Transactional
     public Appointment save(Appointment appointment) {
         return repository.save(appointment);
     }

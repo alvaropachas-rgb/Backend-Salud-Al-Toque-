@@ -3,6 +3,7 @@ package com.example.sss001.config;
 import com.example.sss001.auth.components.JwtAuthorizationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -63,11 +64,22 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**")
                         .permitAll()
 
-                        .requestMatchers("/professionals/**")
+                        // Búsqueda pública: cualquiera puede ver
+                        // profesionales y especialidades sin login.
+                        .requestMatchers(HttpMethod.GET, "/professionals/**")
                         .permitAll()
 
-                        .requestMatchers("/specialties/**")
+                        .requestMatchers(HttpMethod.GET, "/specialties/**")
                         .permitAll()
+
+                        // Crear, editar o borrar sí requiere estar
+                        // autenticado (los roles exactos se validan
+                        // con @PreAuthorize en cada controller).
+                        .requestMatchers("/professionals/**")
+                        .authenticated()
+
+                        .requestMatchers("/specialties/**")
+                        .authenticated()
 
                         .anyRequest()
                         .authenticated()

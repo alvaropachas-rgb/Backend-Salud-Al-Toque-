@@ -3,7 +3,10 @@ package com.example.sss001.professional.application;
 import com.example.sss001.professional.domain.Professional;
 import com.example.sss001.professional.domain.ProfessionalService;
 import com.example.sss001.professional.dto.ProfessionalDTO;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -18,10 +21,10 @@ public class ProfessionalController {
     }
 
     /*
-    * GET /professionals
-    * GET /professionals?specialty=Cardiologia
-    * GET /professionals?specialty=Dermatologia
-    * */
+     * GET /professionals
+     * GET /professionals?specialty=Cardiologia
+     * GET /professionals?specialty=Dermatologia
+     * */
 
     @GetMapping
     public List<ProfessionalDTO> findAll(
@@ -47,18 +50,26 @@ public class ProfessionalController {
         Professional professional = service.findById(id);
 
         if (professional == null) {
-            return null;
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Profesional no encontrado"
+            );
         }
 
         return convertToDTO(professional);
     }
 
+    // TODO: cuando exista el flujo de "crear perfil profesional"
+    // (Persona 1 / MVP), este endpoint deberá permitir también
+    // que el propio profesional actualice su perfil, no solo el ADMIN.
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Professional save(@RequestBody Professional professional) {
         return service.save(professional);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

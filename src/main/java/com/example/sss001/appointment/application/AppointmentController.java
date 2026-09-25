@@ -115,6 +115,21 @@ public class AppointmentController {
             );
         }
 
+        // Evitar doble reserva: ¿ya hay una cita activa para este
+        // profesional en esa fecha y hora?
+        boolean slotTaken = service.isSlotTaken(
+                professional.getId(),
+                request.getDate(),
+                request.getTime()
+        );
+
+        if (slotTaken) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Ese horario ya no está disponible para este profesional"
+            );
+        }
+
         // Crear la cita
         Appointment appointment = new Appointment();
 
@@ -193,12 +208,24 @@ public class AppointmentController {
 
         if (appointment.getPatient() != null) {
             dto.setPatientId(appointment.getPatient().getId());
+
+            if (appointment.getPatient().getUser() != null) {
+                dto.setPatientName(
+                        appointment.getPatient().getUser().getName()
+                );
+            }
         }
 
         if (appointment.getProfessional() != null) {
             dto.setProfessionalId(
                     appointment.getProfessional().getId()
             );
+
+            if (appointment.getProfessional().getUser() != null) {
+                dto.setProfessionalName(
+                        appointment.getProfessional().getUser().getName()
+                );
+            }
         }
         return dto;
     }
