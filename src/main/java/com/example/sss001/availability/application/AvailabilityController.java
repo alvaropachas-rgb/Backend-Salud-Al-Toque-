@@ -6,7 +6,7 @@ import com.example.sss001.availability.dto.AvailabilityDTO;
 import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.professional.domain.Professional;
 import com.example.sss001.professional.domain.ProfessionalService;
-
+import com.example.sss001.exceptions.ResourceOwnershipException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -154,7 +154,7 @@ public class AvailabilityController {
                         .getId()
                         .equals(professional.getId())) {
 
-            throw new IllegalStateException(
+            throw new ResourceOwnershipException(
                     "No puedes eliminar la disponibilidad de otro profesional"
             );
         }
