@@ -16,6 +16,7 @@ import com.example.sss001.availability.domain.Availability;
 import com.example.sss001.availability.domain.AvailabilityService;
 import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.event.AppointmentCreatedEvent;
+import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,7 @@ public class AppointmentController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PATIENT')")
     public AppointmentDTO save(
-            @RequestBody CreateAppointmentRequest request,
+            @Valid @RequestBody CreateAppointmentRequest request,
             Authentication authentication) {
 
         String email = authentication.getName();
