@@ -630,29 +630,65 @@ De esta manera, la colección comprueba tanto la autorización por rol como el f
 
 # 11. Pruebas
 
-Durante el desarrollo se implementaron pruebas de diferentes niveles utilizando Spring Boot Test, MockMvc y Testcontainers.
+Durante el desarrollo se implementaron pruebas de diferentes niveles utilizando JUnit 5, Mockito, Spring Boot Test, MockMvc y Testcontainers.
 
-Entre las pruebas desarrolladas se encuentran:
+Se busca que cada módulo del dominio cuente con las tres capas de pruebas cuando aplica:
 
-- `AuthServiceTest`
-- `FavoriteServiceTest`
-- `AppointmentRepositoryTest`
-- `FavoriteRepositoryTest`
-- `ReviewRepositoryTest`
-- `AvailabilityRepositoryTest`
-- `AppointmentControllerTest`
-- `FavoriteControllerTest`
-- `ReviewControllerTest`
-- `MedicalServiceControllerTest`
-- `AvailabilityControllerTest`
-- `ProfessionalControllerTest`
-- `PatientControllerTest`
-- `UserControllerTest`
-- `SpecialtyControllerTest`
+- **Repository test** (`@DataJpaTest` + Testcontainers): valida las consultas derivadas y personalizadas contra una base de datos PostgreSQL real.
+- **Service test** (Mockito, `@ExtendWith(MockitoExtension.class)`): valida la lógica de negocio de la capa de servicio de forma aislada, mockeando el repositorio.
+- **Controller test** (`@SpringBootTest` + `MockMvc` + Testcontainers): valida los endpoints REST de punta a punta, incluyendo autenticación JWT, autorización por rol (`@PreAuthorize`) y los códigos de error (`401`, `403`, `404`, `409`).
+
+## Pruebas por módulo
+
+| Módulo | Repository | Service | Controller |
+|---|---|---|---|
+| `auth` | — | `AuthServiceTest` | — |
+| `user` | `UserRepositoryTest` | `UserServiceTest` | `UserControllerTest` |
+| `patient` | `PatientRepositoryTest` | `PatientServiceTest` | `PatientControllerTest` |
+| `professional` | `ProfessionalRepositoryTest` | `ProfessionalServiceTest` | `ProfessionalControllerTest` |
+| `specialty` | `SpecialtyRepositoryTest` | `SpecialtyServiceTest` | `SpecialtyControllerTest` |
+| `medicalservice` | `MedicalServiceRepositoryTest` | `MedicalServiceManagerTest` | `MedicalServiceControllerTest` |
+| `availability` | `AvailabilityRepositoryTest` | `AvailabilityServiceTest` | `AvailabilityControllerTest` |
+| `appointment` | `AppointmentRepositoryTest` | `AppointmentServiceTest` | `AppointmentControllerTest` |
+| `review` | `ReviewRepositoryTest` | `ReviewServiceTest` | `ReviewControllerTest` |
+| `favorite` | `FavoriteRepositoryTest` | `FavoriteServiceTest` | `FavoriteControllerTest` |
+
+Adicional: `Sss001ApplicationTests` verifica que el contexto de Spring Boot cargue correctamente.
+
+En total, el proyecto cuenta con **30 clases de test**.
+
+## Qué valida cada capa
+
+- **Service tests:** casos de éxito, casos en los que el repositorio no encuentra el recurso (`Optional.empty()` / `null`), y que los métodos del servicio delegan correctamente en el repositorio (`verify(repository)...`). El caso de `ProfessionalServiceTest` cubre además las 8 combinaciones de filtros del método `search()` (especialidad, ubicación, precio máximo y sus combinaciones).
+- **Repository tests:** consultas derivadas (`findByX`, `existsByX`) contra los datos sembrados en `data.sql`, así como el guardado y recuperación de nuevas entidades.
+- **Controller tests:** flujo HTTP completo con JWT real generado por `JwtService`, cubriendo:
+  - `401 Unauthorized` cuando no se envía token.
+  - `403 Forbidden` cuando el rol autenticado no tiene permiso (`@PreAuthorize`).
+  - `404 Not Found` cuando el recurso no existe.
+  - `409 Conflict` / reglas de negocio (p. ej. citas duplicadas, reseñas repetidas, rating fuera de rango).
+  - Casos de éxito (`200 OK`, `201 Created`).
 
 Las pruebas utilizan PostgreSQL mediante Testcontainers para acercar el entorno de testing al entorno real de ejecución.
 
 El objetivo de estas pruebas es verificar tanto el funcionamiento esperado como los errores de autenticación, autorización, recursos inexistentes y conflictos de negocio.
+
+## Ejecución de las pruebas
+
+Requiere Docker corriendo localmente (Testcontainers levanta un contenedor `postgres:16-alpine` para los tests de repository y controller).
+
+```bash
+# Ejecutar toda la suite de pruebas
+./mvnw test
+
+# Ejecutar una clase de test específica
+./mvnw test -Dtest=ReviewControllerTest
+
+# Ejecutar todas las pruebas de un módulo (repository + service + controller)
+./mvnw test -Dtest=com.example.sss001.review.*
+
+# Ejecutar varias clases puntuales
+./mvnw test -Dtest=PatientServiceTest,PatientRepositoryTest,ReviewServiceTest
+```
 
 ---
 

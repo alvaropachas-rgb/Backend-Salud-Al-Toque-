@@ -107,9 +107,7 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/availabilities/**").permitAll()
 
-                        .requestMatchers(
-                                "/reviews/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
 
                         // ===============================
                         // TODO LO DEMÁS
