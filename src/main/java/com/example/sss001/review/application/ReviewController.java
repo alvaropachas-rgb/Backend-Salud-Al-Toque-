@@ -14,7 +14,7 @@ import com.example.sss001.review.dto.CreateReviewRequest;
 import com.example.sss001.review.dto.ReviewDTO;
 import com.example.sss001.exceptions.ResourceNotFoundException;
 import com.example.sss001.event.ReviewCreatedEvent;
-
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +106,7 @@ public class ReviewController {
     @PostMapping
     @PreAuthorize("hasRole('PATIENT')")
     public ReviewDTO save(
-            @RequestBody CreateReviewRequest request,
+            @Valid @RequestBody CreateReviewRequest request,
             Authentication authentication) {
 
         String email =

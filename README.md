@@ -1,803 +1,245 @@
-# 🩺 Salud al Toque
+# 🩺 Salud al Toque — Backend
 
-## Proyecto Final — CS 2031 Desarrollo Basado en Plataforma
+**Plataforma para encontrar y comparar profesionales de la salud según especialidad, precio, ubicación, disponibilidad y calificación.**
 
-**Curso:** CS 2031 Desarrollo Basado en Plataforma  
-**Proyecto:** Salud al Toque  
+**Curso:** CS 2031 Desarrollo Basado en Plataforma
 
-**Backend:** Java + Spring Boot  
-**Base de datos:** PostgreSQL  
-**Integrantes:** 
-- Alvaro David Pachas Chapeton
-- Fabricio Alberto Olaguibel Romero
-- Saul Morales Zumaeta
-- Alexander Muñoz Zamora  
+**Integrantes:**
+- Alvaro David Pachas Chapeton (202510345)
+- Fabricio Alberto Olaguibel Romero (202410686)
+- Saul Morales Zumaeta (202010493)
+- Alexander Muñoz Zamora (202210475)
+
+**Deployment:** `[]`
+
 ---
 
 ## Índice
 
-1. [Introducción](#introducción)
-2. [Identificación del Problema](#identificación-del-problema)
-3. [Descripción de la Solución](#descripción-de-la-solución)
-4. [Arquitectura del Proyecto](#arquitectura-del-proyecto)
-5. [Modelo de Entidades](#modelo-de-entidades)
-6. [DTOs y Mapeo](#dtos-y-mapeo)
-7. [API REST y Endpoints](#api-rest-y-endpoints)
-8. [Manejo de Errores](#manejo-de-errores)
-9. [Seguridad y Autenticación](#seguridad-y-autenticación)
-10. [Base de Datos y Ejecución](#base-de-datos-y-ejecución)
-11. [Pruebas](#pruebas)
-12. [GitHub y Gestión del Proyecto](#github-y-gestión-del-proyecto)
-13. [Conclusiones y Trabajo Futuro](#conclusiones-y-trabajo-futuro)
-14. [Apéndices](#apéndices)
+1. [Introducción](#1-introducción)
+2. [Identificación del Problema](#2-identificación-del-problema)
+3. [Descripción de la Solución](#3-descripción-de-la-solución)
+4. [Arquitectura y Decisiones de Diseño](#4-arquitectura-y-decisiones-de-diseño)
+5. [Modelo de Entidades](#5-modelo-de-entidades)
+6. [Endpoints](#6-endpoints)
+7. [Manejo de Errores](#7-manejo-de-errores)
+8. [Medidas de Seguridad](#8-medidas-de-seguridad)
+9. [Eventos y Asincronía](#9-eventos-y-asincronía)
+10. [Ejecución Local y Variables de Entorno](#10-ejecución-local-y-variables-de-entorno)
+11. [GitHub & Management](#11-github--management)
+12. [Conclusión](#12-conclusión)
+13. [Apéndices](#13-apéndices)
 
 ---
 
-# 1. Introducción
+## 1. Introducción
 
-## Contexto
+### Contexto
+En Lima, muchas personas buscan atención médica, odontológica o psicológica particular porque el sistema público está saturado. Sin embargo, la información sobre profesionales privados está dispersa entre redes sociales, recomendaciones y llamadas telefónicas, y comparar precio, ubicación y horarios es lento.
 
-Salud al Toque es una plataforma orientada a facilitar la búsqueda y gestión de servicios médicos. El sistema busca conectar pacientes con profesionales de la salud, permitiendo consultar información profesional, especialidades, servicios médicos, disponibilidad y gestionar citas.
+### Objetivos del Proyecto
+- Permitir a pacientes buscar y filtrar profesionales por especialidad, ubicación, precio máximo y calificación mínima.
+- Permitir a profesionales publicar sus servicios con precio y sus horarios de atención.
+- Gestionar la reserva de citas evitando la doble reserva de un mismo horario.
+- Generar confianza mediante reseñas verificadas (solo de citas completadas).
+- Notificar por correo, de forma asíncrona, los eventos importantes del flujo.
 
-El backend fue desarrollado como una API REST utilizando Java y Spring Boot. La aplicación administra usuarios con diferentes roles, profesionales, pacientes, servicios médicos, especialidades, citas, disponibilidades, reseñas y favoritos.
+## 2. Identificación del Problema
 
-## Objetivos del Proyecto
+### Descripción del Problema
+Los pacientes no tienen un lugar único donde comparar profesionales de salud privados según su presupuesto, cercanía y disponibilidad. A la vez, los profesionales independientes tienen dificultades para llegar a nuevos pacientes y administrar su agenda sin cruces de horario.
 
-Los principales objetivos son:
+### Justificación
+Reducir el tiempo de búsqueda de atención mejora el acceso a la salud. Un sistema de reservas con validación de disponibilidad elimina conflictos de horario, y las reseñas asociadas a citas reales ayudan a tomar decisiones informadas.
 
-- Permitir el registro y autenticación de usuarios.
-- Gestionar pacientes y profesionales de la salud.
-- Permitir consultar profesionales por especialidad, ubicación y precio.
-- Gestionar los servicios ofrecidos por cada profesional.
-- Registrar la disponibilidad de los profesionales.
-- Permitir la creación y gestión de citas médicas.
-- Permitir que los pacientes registren reseñas.
-- Permitir guardar profesionales como favoritos.
-- Proteger los recursos mediante autenticación y autorización.
-- Mantener una arquitectura organizada y escalable.
+## 3. Descripción de la Solución
 
----
-
-# 2. Identificación del Problema
-
-## Descripción del Problema
-
-Encontrar profesionales de la salud y coordinar una atención puede requerir consultar diferentes fuentes de información. Además, el paciente necesita conocer datos como especialidad, ubicación, servicios disponibles, precios, horarios y valoración del profesional antes de solicitar una cita.
-
-Desde el punto de vista del profesional, también es necesario administrar sus servicios, disponibilidad y citas.
-
-## Justificación
-
-Salud al Toque centraliza estas operaciones en una sola plataforma. De esta manera, el paciente puede consultar profesionales y servicios y posteriormente gestionar sus citas desde el mismo sistema.
-
-La separación entre pacientes, profesionales, servicios, disponibilidad y citas permite representar de manera estructurada las relaciones existentes en el dominio.
-
----
-
-# 3. Descripción de la Solución
-
-## Funcionalidades Implementadas
-
-### Autenticación
-
-El sistema permite:
-
-- Registro de pacientes.
-- Inicio de sesión.
-- Generación de tokens JWT.
-- Validación de tokens.
-- Autorización según roles.
-
-### Gestión de profesionales
-
-Los usuarios pueden consultar profesionales y aplicar filtros por:
-
-- Especialidad.
-- Ubicación.
-- Precio máximo.
-
-Cada profesional está relacionado con un usuario, una especialidad y sus servicios médicos.
-
-### Servicios médicos
-
-Cada profesional puede administrar los servicios médicos que ofrece. Los servicios contienen:
-
-- Nombre.
-- Descripción.
-- Precio.
-- Profesional asociado.
-
-El precio de un servicio se almacena también en la cita cuando esta se genera, funcionando como un registro histórico del precio utilizado en dicha reserva.
-
-### Disponibilidad
-
-Los profesionales pueden registrar sus horarios de atención indicando:
-
-- Día de la semana.
-- Hora de inicio.
-- Hora de finalización.
-
-### Citas
-
-Las citas relacionan:
-
-- Paciente.
-- Profesional.
-- Servicio médico.
-- Fecha.
-- Hora.
-- Estado.
-- Notas.
-- Precio.
-
-Además, se implementa una validación para evitar la duplicación de una cita para el mismo profesional, fecha y hora.
-
-### Reseñas
-
-Los pacientes pueden registrar reseñas asociadas a una cita completada. Las reseñas contienen una calificación y un comentario y se relacionan con el paciente, profesional y cita correspondiente.
-
-### Favoritos
-
-Los pacientes pueden guardar profesionales como favoritos. Se evita que un mismo paciente registre dos veces al mismo profesional como favorito mediante una restricción de unicidad.
-
-### Eventos y procesamiento asíncrono
-
-El backend incorpora eventos de dominio y procesamiento asíncrono para las notificaciones:
-
-- `UserRegisteredEvent`: se publica al registrar un usuario.
-- `AppointmentCreatedEvent`: se publica al crear una cita.
-- `ReviewCreatedEvent`: se publica al registrar una reseña.
-
-El procesamiento asíncrono se habilita mediante `@EnableAsync` y un `ThreadPoolTaskExecutor` dedicado a notificaciones. Los hilos del executor utilizan el prefijo `notification-`.
-
-El flujo de negocio probado es:
-
-```text
-Paciente
-  │
-  ├── Sign Up
-  │     └── UserRegisteredEvent → @Async → correo
-  │
-  ├── Sign In
-  │
-  └── Crear Appointment
-        └── AppointmentCreatedEvent → @Async → correo
-                 │
-                 ▼
-Profesional
-  │
-  ├── Sign In
-  ├── Aceptar Appointment
-  └── Completar Appointment
-                 │
-                 ▼
-Paciente
-  │
-  └── Crear Review
-        └── ReviewCreatedEvent → @Async → correo
-```
-
-La reseña se registra después de que el profesional haya completado la cita.
-
----
-
-# 4. Arquitectura del Proyecto
-
-El backend utiliza una arquitectura organizada por funcionalidades, separando responsabilidades entre aplicación, dominio, DTO e infraestructura.
-
-```text
-src/main/java/com/example/sss001/
-
-├── config/
-│   └── SecurityConfig.java
-│
-├── auth/
-│   ├── application/
-│   ├── components/
-│   ├── domain/
-│   └── dto/
-│
-├── user/
-│   ├── application/
-│   ├── domain/
-│   ├── dto/
-│   └── infrastructure/
-│
-├── professional/
-├── patient/
-├── appointment/
-├── specialty/
-├── medicalservice/
-├── availability/
-├── review/
-└── favorite/
-```
-
-Cada módulo contiene sus propios componentes. Los controllers reciben las solicitudes HTTP, los services contienen la lógica de negocio y los repositories realizan el acceso a la base de datos.
-
-Esta separación sigue el patrón general:
-
-```text
-Controller
-    ↓
-Service / Domain
-    ↓
-Repository
-    ↓
-PostgreSQL
-```
-
-La inyección de dependencias se realiza mediante constructores, reduciendo el acoplamiento entre componentes.
-
----
-
-# 5. Modelo de Entidades
-
-El sistema actualmente cuenta con las siguientes entidades principales:
-
-| Entidad | Descripción |
+### Funcionalidades Implementadas
+| Funcionalidad | Cómo contribuye |
 |---|---|
-| `User` | Información y credenciales del usuario |
-| `Patient` | Información adicional del paciente |
-| `Professional` | Información del profesional |
-| `Specialty` | Especialidad médica |
-| `MedicalService` | Servicio ofrecido por un profesional |
-| `Appointment` | Cita médica |
-| `Availability` | Horario disponible |
-| `Review` | Reseña de un profesional |
-| `Favorite` | Profesional guardado por un paciente |
+| Registro e inicio de sesión (JWT) | Acceso seguro con contraseñas cifradas y token con expiración. |
+| Roles `ADMIN`, `PROFESSIONAL`, `PATIENT` | Cada actor solo ve y modifica lo que le corresponde. |
+| Búsqueda con filtros (`specialty`, `location`, `maxPrice`) | Resuelve directamente la comparación de profesionales. |
+| Servicios médicos con precio | El paciente conoce el costo antes de reservar; la cita guarda el precio como snapshot. |
+| Disponibilidad semanal | El profesional define bloques horarios; las citas fuera de ellos se rechazan. |
+| Citas con ciclo de vida | `PENDIENTE → ACEPTADA → COMPLETADA` o `RECHAZADA`. Un horario ocupado no puede reservarse de nuevo (409). |
+| Reseñas | Solo sobre citas completadas propias; recalculan el rating del profesional. |
+| Favoritos | El paciente guarda profesionales para volver a consultarlos. |
+| Notificaciones por correo | Bienvenida, confirmación de cita al paciente y al profesional, y nueva reseña, con plantillas Thymeleaf. |
 
-## Relaciones principales
+### Tecnologías Utilizadas
+- **Lenguaje y framework:** Java 17, Spring Boot 4 (Web MVC, Data JPA, Security, Validation, Mail, Thymeleaf).
+- **Base de datos:** PostgreSQL 16 (Docker Compose en local).
+- **Seguridad:** Spring Security, JJWT 0.12, BCrypt.
+- **Pruebas:** JUnit 5, Mockito, MockMvc, Testcontainers.
+- **Herramientas:** Maven, Lombok, Postman, Mailpit (SMTP de desarrollo), GitHub Actions.
+
+## 4. Arquitectura y Decisiones de Diseño
+
+El código se organiza **por módulo de dominio** (`user`, `patient`, `professional`, `specialty`, `medicalservice`, `availability`, `appointment`, `review`, `favorite`, `auth`), y cada módulo tiene las mismas capas:
+
+```
+application/     → @RestController: recibe DTOs validados y devuelve ResponseEntity
+domain/          → entidades JPA y @Service con toda la lógica de negocio
+infrastructure/  → repositorios Spring Data JPA
+dto/             → Request DTOs (entrada) y Response DTOs (salida, con fromEntity)
+```
+
+Decisiones principales:
+- **Capas separadas:** los controllers exponen la API, los services concentran el acceso a datos y los repositorios encapsulan las consultas JPA.
+- **Usuario desde el token:** el profesional o paciente se obtiene del JWT autenticado; nunca se confía en un `professionalId` o `patientId` enviado por el cliente.
+- **DTOs de entrada y salida:** las respuestas nunca exponen entidades ni contraseñas.
+- **Inyección por constructor** en todos los componentes; ningún componente de Spring se instancia con `new`.
+
+## 5. Modelo de Entidades
 
 ```mermaid
 erDiagram
-    USER ||--o| PATIENT : "puede ser"
-    USER ||--o| PROFESSIONAL : "puede ser"
-
-    SPECIALTY ||--o{ PROFESSIONAL : tiene
-
+    USER ||--o| PATIENT : "tiene perfil"
+    USER ||--o| PROFESSIONAL : "tiene perfil"
+    SPECIALTY ||--o{ PROFESSIONAL : clasifica
     PROFESSIONAL ||--o{ MEDICAL_SERVICE : ofrece
-    PROFESSIONAL ||--o{ AVAILABILITY : posee
-    PROFESSIONAL ||--o{ APPOINTMENT : atiende
-    PROFESSIONAL ||--o{ REVIEW : recibe
-    PROFESSIONAL ||--o{ FAVORITE : "es guardado"
-
+    PROFESSIONAL ||--o{ AVAILABILITY : define
     PATIENT ||--o{ APPOINTMENT : reserva
+    PROFESSIONAL ||--o{ APPOINTMENT : atiende
+    MEDICAL_SERVICE ||--o{ APPOINTMENT : "se agenda en"
+    APPOINTMENT ||--o| REVIEW : recibe
     PATIENT ||--o{ REVIEW : escribe
+    PROFESSIONAL ||--o{ REVIEW : recibe
     PATIENT ||--o{ FAVORITE : guarda
-
-    MEDICAL_SERVICE ||--o{ APPOINTMENT : corresponde
-
-    APPOINTMENT ||--o| REVIEW : genera
+    PROFESSIONAL ||--o{ FAVORITE : "es guardado"
 ```
 
-Las relaciones se implementan mediante anotaciones JPA como `@OneToOne`, `@OneToMany` y `@ManyToOne`.
-
-La entidad `Favorite` incorpora además una restricción de unicidad sobre la combinación `patient_id` y `professional_id`.
-
----
-
-# 6. DTOs y Mapeo
-
-El proyecto utiliza DTOs para evitar exponer directamente las entidades JPA en los endpoints.
-
-Entre los DTO implementados se encuentran:
-
-- `UserDTO`
-- `ProfessionalDTO`
-- `PatientDTO`
-- `AppointmentDTO`
-- `CreateAppointmentRequest`
-- `SpecialtyDTO`
-- `MedicalServiceDTO`
-- `AvailabilityDTO`
-- `ReviewDTO`
-- `CreateReviewRequest`
-- `FavoriteDTO`
-- `SignInRequest`
-- `SignUpRequest`
-- `TokenResponse`
-
-Esta separación permite definir estructuras específicas para las solicitudes y respuestas de la API.
-
-Por ejemplo, las contraseñas de los usuarios no forman parte de `UserDTO`, evitando exponer información sensible.
-
-Para algunas operaciones se utiliza ModelMapper, mientras que determinadas conversiones se realizan directamente en los servicios.
-
----
-
-# 7. API REST y Endpoints
-
-La API utiliza recursos en plural y verbos HTTP de acuerdo con las operaciones realizadas.
-
-## Autenticación
-
-| Método | Endpoint | Descripción |
+| Entidad | Atributos principales | Notas |
 |---|---|---|
-| `POST` | `/auth/signup` | Registrar paciente |
-| `POST` | `/auth/signin` | Iniciar sesión |
+| `User` | name, email (único), password (BCrypt), phone, role | Restricciones `nullable`, `unique` y `length`. |
+| `Patient` | address, dateOfBirth, user | `@OneToOne` con `User`. |
+| `Professional` | location, rating, user, specialty | `@OneToMany` a sus servicios médicos. |
+| `Specialty` | name (único) | Catálogo administrado por ADMIN. |
+| `MedicalService` | name, description, price | Pertenece a un profesional. |
+| `Availability` | dayOfWeek, startTime, endTime | Bloques semanales por profesional. |
+| `Appointment` | date, time, status, notes, price | Guarda el precio del servicio como snapshot. |
+| `Review` | rating, comment, appointment (única) | Una reseña por cita. |
+| `Favorite` | patient, professional | Restricción única `(patient_id, professional_id)`. |
 
-## Usuarios
+Las columnas obligatorias usan `nullable = false`, el email y el nombre de especialidad son únicos y los favoritos tienen restricción única `(patient_id, professional_id)`. En la capa de aplicación se valida con `@Valid`, `@NotBlank`, `@Email`, `@Pattern`, `@Min`, `@Max` y `@Size`.
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/users` | Listar usuarios |
-| `GET` | `/users/{id}` | Obtener usuario |
+## 6. Endpoints
 
-## Profesionales
+La colección completa, con ejemplos y variables, está en [`postman_collection.json`](postman_collection.json).
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/professionals` | Listar y buscar profesionales |
-| `GET` | `/professionals/{id}` | Obtener profesional |
-
-Los filtros disponibles incluyen:
-
-```text
-/professionals?specialty=Cardiologia
-/professionals?location=Lima
-/professionals?maxPrice=80
-```
-
-También pueden combinarse.
-
-## Pacientes
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/patients` | Consultar pacientes |
-| `GET` | `/patients/{id}` | Obtener paciente |
-| `GET` | `/patients/me` | Obtener información del paciente autenticado |
-
-## Especialidades
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/specialties` | Listar especialidades |
-| `GET` | `/specialties/{id}` | Obtener especialidad |
-
-## Servicios médicos
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/medical-services` | Listar servicios |
-| `GET` | `/medical-services/{id}` | Obtener servicio |
-| `POST` | `/medical-services` | Crear servicio |
-
-## Disponibilidad
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/availabilities` | Listar disponibilidades |
-| `GET` | `/availabilities/{id}` | Obtener disponibilidad |
-| `POST` | `/availabilities` | Crear disponibilidad |
-
-## Citas
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/appointments` | Consultar citas según permisos |
-| `GET` | `/appointments/{id}` | Obtener cita |
-| `POST` | `/appointments` | Crear cita |
-| `PATCH` | `/appointments/{id}/accept` | Aceptar una cita como profesional |
-| `PATCH` | `/appointments/{id}/complete` | Marcar una cita como completada como profesional |
-
-Las operaciones de aceptación y completado requieren el JWT del profesional:
-
-```text
-Authorization: Bearer <professionalToken>
-```
-
-El flujo es:
-
-```text
-POST /appointments
-        ↓
-PATCH /appointments/{id}/accept
-        ↓
-PATCH /appointments/{id}/complete
-        ↓
-POST /reviews
-```
-
-El acceso a las citas se encuentra protegido para evitar que un paciente consulte información perteneciente a otros usuarios.
-
-## Reseñas
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/reviews` | Listar reseñas |
-| `GET` | `/reviews/{id}` | Obtener reseña |
-| `POST` | `/reviews` | Crear reseña |
-
-## Favoritos
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/favorites` | Obtener favoritos |
-| `POST` | `/favorites` | Agregar favorito |
-| `DELETE` | `/favorites/{id}` | Eliminar favorito |
-
----
-
-# 8. Manejo de Errores
-
-El proyecto cuenta con un `GlobalExceptionHandler` basado en `@ControllerAdvice`.
-
-Se implementaron excepciones personalizadas como:
-
-- `ResourceNotFoundException`
-- `ForbiddenException`
-- `ConflictException`
-
-Además, el sistema maneja excepciones de Spring Security y errores relacionados con solicitudes HTTP.
-
-Los principales códigos utilizados son:
-
-| Código | Significado |
+| Recurso | Endpoints |
 |---|---|
-| `200` | Operación exitosa |
-| `400` | Solicitud inválida |
-| `401` | Usuario no autenticado |
-| `403` | Usuario autenticado sin permisos |
-| `404` | Recurso inexistente |
-| `409` | Conflicto |
-| `500` | Error interno |
+| Auth (público) | `POST /auth/signup`, `POST /auth/signin` |
+| Users (ADMIN) | `GET /users`, `GET /users/{id}`, `POST /users`, `DELETE /users/{id}` |
+| Patients | PATIENT: `GET /patients/me`; ADMIN: `GET /patients`, `GET /patients/{id}`, `POST /patients`, `DELETE /patients/{id}` |
+| Professionals | Público: `GET /professionals?specialty=&location=&maxPrice=`, `GET /professionals/{id}`; ADMIN: `POST`, `PUT /{id}`, `DELETE /{id}` |
+| Specialties | Público: `GET`, `GET /{id}`; ADMIN: `POST`, `DELETE /{id}` |
+| Medical services | Público: `GET`, `GET /{id}`, `GET /professional/{id}`; PROFESSIONAL (dueño): `POST`, `DELETE /{id}` |
+| Availabilities | Público: `GET`, `GET /{id}`, `GET /professional/{id}`; PROFESSIONAL (dueño): `POST`, `DELETE /{id}` |
+| Appointments | PATIENT: `POST`, `GET /my-appointments`; PROFESSIONAL: `GET /my-professional-appointments`, `PATCH /{id}/accept`, `/reject`, `/complete`; ADMIN: `GET`, `GET /{id}`, `GET /patient/{id}`, `GET /professional/{id}`, `DELETE /{id}` |
+| Reviews | Público: `GET`, `GET /{id}`, `GET /professional/{id}`; PATIENT: `POST` |
+| Favorites | PATIENT: `GET /my-favorites`, `POST /professional/{id}`, `DELETE /{id}` |
 
-Un ejemplo importante es la diferencia entre `401` y `403`: un usuario sin token no está autenticado, mientras que un usuario autenticado puede ser rechazado cuando intenta ejecutar una operación que su rol no permite.
+## 7. Manejo de Errores
 
----
+Un `@RestControllerAdvice` (`GlobalExceptionHandler`) centraliza todos los errores y responde siempre con el mismo `ErrorResponseDTO`:
 
-# 9. Seguridad y Autenticación
-
-La aplicación utiliza Spring Security junto con JWT.
-
-El proceso de autenticación es:
-
-```text
-Usuario
-   ↓
-POST /auth/signin
-   ↓
-AuthenticationManager
-   ↓
-Validación de email/password
-   ↓
-JwtService
-   ↓
-Token JWT
+```json
+{ "timestamp": "2026-09-25T21:00:00", "status": 409, "error": "Conflict",
+  "message": "El horario seleccionado ya está reservado", "path": "/appointments", "fieldErrors": null }
 ```
 
-Posteriormente, el cliente envía:
+Excepciones personalizadas, organizadas en jerarquía sobre `ApiException` (que lleva su `HttpStatus`):
 
-```text
-Authorization: Bearer <token>
-```
+| Categoría (status) | Excepciones |
+|---|---|
+| 400 Bad Request | `BadRequestException`, `InvalidFormatException` |
+| 401 Unauthorized | `UnauthorizedException`, `InvalidTokenException` |
+| 403 Forbidden | `ForbiddenException`, `ResourceOwnershipException`, `InvalidOperationException` |
+| 404 Not Found | `ResourceNotFoundException` |
+| 409 Conflict | `ConflictException`, `DuplicateResourceException`, `SlotUnavailableException`, `InvalidStatusTransitionException` |
 
-El `JwtAuthorizationFilter` intercepta la solicitud, valida el token y obtiene el usuario correspondiente mediante `CustomUserDetailsService`.
+También se manejan excepciones de Spring: `MethodArgumentNotValidException` (400 con `fieldErrors` por campo), `HttpMessageNotReadableException`, `MethodArgumentTypeMismatchException`, `MissingServletRequestParameterException` (400), `AuthenticationException` (401), `AccessDeniedException` (403), `NoResourceFoundException` (404), `HttpRequestMethodNotSupportedException` (405), `DataIntegrityViolationException` (409) y cualquier otra como 500, que se registra en el log sin exponer detalles internos. Los accesos sin token o sin permisos se responden con 401 y 403 desde la configuración de Spring Security.
 
-Las contraseñas son almacenadas utilizando `BCryptPasswordEncoder`.
+Manejar los errores de forma global evita respuestas inconsistentes, filtra información sensible (stack traces) y permite que el frontend reaccione según el código HTTP.
 
-Actualmente existen roles como:
+## 8. Medidas de Seguridad
 
-```text
-PATIENT
-PROFESSIONAL
-ADMIN
-```
+### Seguridad de Datos
+- **Autenticación JWT stateless:** el login y el registro devuelven un token firmado (HS256) con expiración de 1 hora. `JwtAuthorizationFilter` extrae el token del header `Authorization: Bearer`, valida firma y expiración y carga el usuario con `CustomUserDetailsService`, dejándolo en el `SecurityContext`.
+- **Contraseñas con BCrypt**, con política de contraseña fuerte en el registro (8–64 caracteres, letras y números) y email único.
+- **Autorización por roles** guardados en BD: `@PreAuthorize` en cada endpoint sensible y, además, verificación de propiedad (un profesional solo modifica sus servicios, horarios y citas; un paciente solo sus reseñas y favoritos).
+- **Configuración sensible por variables de entorno:** credenciales de BD y SMTP. `.env` no se sube al repositorio.
 
-La autorización se utiliza para restringir operaciones sensibles. Por ejemplo, un paciente no puede crear disponibilidades o servicios médicos de un profesional.
+### Prevención de Vulnerabilidades
+- **Inyección SQL:** todo el acceso a datos usa Spring Data JPA con consultas parametrizadas; no se concatena SQL.
+- **Validación de entrada:** Bean Validation en los requests de autenticación, citas y reseñas; los datos inválidos se rechazan con 400.
+- **CSRF:** deshabilitado de forma intencional porque la API es stateless y no usa cookies de sesión.
+- **XSS:** la API solo responde JSON y las plantillas de correo Thymeleaf escapan el contenido con `th:text`.
 
-La configuración utiliza sesiones `STATELESS`, por lo que la autenticación se basa en los tokens.
+## 9. Eventos y Asincronía
 
-La clave JWT está configurada mediante una propiedad de aplicación y está preparada para utilizar variables de entorno en la configuración.
-
----
-
-# 10. Base de Datos y Ejecución
-
-El proyecto utiliza PostgreSQL y Docker Compose para facilitar el desarrollo local.
-
-El contenedor utilizado es:
-
-```text
-postgres:16-alpine
-```
-
-La aplicación se conecta mediante:
-
-```properties
-spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:sss001}
-```
-
-Para iniciar la base de datos:
-
-```bash
-docker compose up -d
-```
-
-Para ejecutar el backend:
-
-```bash
-./mvnw spring-boot:run
-```
-
-También puede ejecutarse directamente desde IntelliJ IDEA.
-
-La aplicación utiliza `data.sql` para cargar datos iniciales de prueba, incluyendo usuarios, profesionales, especialidades, servicios, disponibilidad y una cita inicial.
-
-### Mailpit para desarrollo
-
-Mailpit permite capturar los correos enviados por el backend sin enviarlos a destinatarios reales.
-
-Iniciar Mailpit con Docker:
-
-```bash
-docker run -d \
-  --name mailpit \
-  -p 1025:1025 \
-  -p 8025:8025 \
-  axllent/mailpit
-```
-
-La interfaz web de Mailpit queda disponible en:
-
-```text
-http://localhost:8025
-```
-
-El backend envía los mensajes al SMTP local de Mailpit mediante `localhost:1025`. Esto permite verificar las notificaciones generadas por `UserRegisteredEvent`, `AppointmentCreatedEvent` y `ReviewCreatedEvent`.
-
-
----
-
-# 11. Eventos y Procesamiento Asíncrono
-
-El backend utiliza Spring para ejecutar los listeners de eventos en segundo plano.
-
-### Eventos implementados
-
-| Evento | Se dispara cuando | Procesamiento |
+| Evento | Publicado en | Listener y efecto |
 |---|---|---|
-| `UserRegisteredEvent` | Se registra un usuario | `@Async` |
-| `AppointmentCreatedEvent` | Se crea una cita | `@Async` |
-| `ReviewCreatedEvent` | Se crea una reseña | `@Async` |
+| `UserRegisteredEvent` | `AuthService.signUp` | Correo de bienvenida. |
+| `AppointmentCreatedEvent` | creación de cita | Confirmación al paciente y aviso al profesional. |
+| `ReviewCreatedEvent` | creación de reseña | Aviso al profesional de la nueva reseña. |
 
-La configuración utiliza un `ThreadPoolTaskExecutor` llamado `notificationExecutor`, con hilos identificables mediante `notification-*`.
+Los listeners usan `@EventListener` y `@Async("notificationExecutor")`. `AsyncConfig` (`@EnableAsync`) define un `ThreadPoolTaskExecutor` (2–5 hilos, cola de 100, prefijo `notification-`).
 
-En los logs se puede comprobar la separación entre la publicación y el listener:
+**¿Por qué asíncronos?** Enviar un correo por SMTP puede tardar segundos o fallar. Si fuera síncrono, el paciente esperaría esa latencia al reservar y un fallo del servidor de correo haría fallar la reserva. Con eventos, los services no dependen del módulo de notificaciones (bajo acoplamiento), y los errores de envío se registran sin afectar la operación principal.
 
-```text
-EVENT PUBLISH START ... thread=http-nio-...
-EVENT PUBLISH END   ... thread=http-nio-...
-ASYNC EVENT START   ... thread=notification-...
-ASYNC EVENT END     ... thread=notification-...
-```
-
-Esto permite verificar que el procesamiento del evento se ejecuta fuera del hilo HTTP que atendió la solicitud.
-
----
-
-# 12. Correo de Desarrollo con Mailpit
-
-Mailpit se utiliza como servidor SMTP local durante las pruebas de integración.
-
-### Levantar Mailpit
+## 10. Ejecución Local y Variables de Entorno
 
 ```bash
-docker run -d \
-  --name mailpit \
-  -p 1025:1025 \
-  -p 8025:8025 \
-  axllent/mailpit
+docker compose up -d                 # PostgreSQL en el puerto 5434
+docker run -d -p 1025:1025 -p 8025:8025 axllent/mailpit   # correos en http://localhost:8025
+./mvnw spring-boot:run               # API en http://localhost:8080
+./mvnw verify                        # pruebas (requiere Docker por Testcontainers)
 ```
 
-### Acceso
+Usuarios de prueba (`data.sql`, contraseña `123456`): `admin@gmail.com`, `carlos@gmail.com` (profesional), `luis@gmail.com` (paciente).
 
-- SMTP: `localhost:1025`
-- Interfaz web: `http://localhost:8025`
+| Variable | Uso |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión a PostgreSQL |
+| `NOTIFICATION_EMAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP |
 
-Después de iniciar Mailpit y reiniciar el backend, los correos generados por los listeners asíncronos pueden revisarse desde la interfaz web.
+## 11. GitHub & Management
 
-### Flujo completo de Postman
+- **Gestión de tareas:** `[completar: describir el tablero de GitHub Projects, issues asignadas por integrante, labels y milestones por semana]`.
+- **Flujo de ramas:** `[completar: ramas feature/* y pull requests hacia main con revisión]`.
+- **GitHub Actions:** `[completar: describir el workflow si se configura; si no, indicarlo como trabajo futuro]`.
 
-La colección de Postman contiene el siguiente proceso:
+## 12. Conclusión
 
-```text
-1. Backend reachable
-2. Paciente - Sign Up
-3. Paciente - Sign In
-4. Crear Appointment
-5. Verificar Appointment
-6. Profesional - Sign In
-7. Profesional - Accept Appointment
-8. Profesional - Complete Appointment
-9. Paciente - Create Review
-10. Verificar Review
-11. Async Evidence Checklist
-```
+### Logros del Proyecto
+Se construyó un backend completo que permite buscar y comparar profesionales, reservar citas sin conflictos de horario, gestionar su ciclo de vida, reseñar atenciones reales y recibir notificaciones asíncronas, con seguridad por roles y una API REST versionada y documentada.
 
-Los JWT se mantienen separados:
+### Aprendizajes Clave
+- Separar controller, service y repository simplifica las pruebas y el mantenimiento.
+- Los DTOs protegen el modelo de persistencia y evitan fugas de datos.
+- La autorización no termina en el rol: también hay que verificar la propiedad de cada recurso.
+- Los eventos y `@Async` desacoplan módulos y mejoran los tiempos de respuesta.
 
-```text
-token             → JWT del paciente
-professionalToken → JWT del profesional
-```
+### Trabajo Futuro
+- Refresh tokens y versionado de la API (`/api/v1`).
+- Cancelación de citas por el paciente y filtro por calificación mínima.
+- Paginación y ordenamiento en los listados.
+- Documentación Swagger/OpenAPI.
+- Integración con Google Maps para búsqueda por cercanía.
+- Recordatorios programados de citas y subida de fotos de perfil a S3.
+- Despliegue con CD automático.
 
-De esta manera, la colección comprueba tanto la autorización por rol como el flujo de eventos.
+## 13. Apéndices
 
----
+### Licencia
+MIT.
 
-# 11. Pruebas
-
-Durante el desarrollo se implementaron pruebas de diferentes niveles utilizando JUnit 5, Mockito, Spring Boot Test, MockMvc y Testcontainers.
-
-Se busca que cada módulo del dominio cuente con las tres capas de pruebas cuando aplica:
-
-- **Repository test** (`@DataJpaTest` + Testcontainers): valida las consultas derivadas y personalizadas contra una base de datos PostgreSQL real.
-- **Service test** (Mockito, `@ExtendWith(MockitoExtension.class)`): valida la lógica de negocio de la capa de servicio de forma aislada, mockeando el repositorio.
-- **Controller test** (`@SpringBootTest` + `MockMvc` + Testcontainers): valida los endpoints REST de punta a punta, incluyendo autenticación JWT, autorización por rol (`@PreAuthorize`) y los códigos de error (`401`, `403`, `404`, `409`).
-
-## Pruebas por módulo
-
-| Módulo | Repository | Service | Controller |
-|---|---|---|---|
-| `auth` | — | `AuthServiceTest` | — |
-| `user` | `UserRepositoryTest` | `UserServiceTest` | `UserControllerTest` |
-| `patient` | `PatientRepositoryTest` | `PatientServiceTest` | `PatientControllerTest` |
-| `professional` | `ProfessionalRepositoryTest` | `ProfessionalServiceTest` | `ProfessionalControllerTest` |
-| `specialty` | `SpecialtyRepositoryTest` | `SpecialtyServiceTest` | `SpecialtyControllerTest` |
-| `medicalservice` | `MedicalServiceRepositoryTest` | `MedicalServiceManagerTest` | `MedicalServiceControllerTest` |
-| `availability` | `AvailabilityRepositoryTest` | `AvailabilityServiceTest` | `AvailabilityControllerTest` |
-| `appointment` | `AppointmentRepositoryTest` | `AppointmentServiceTest` | `AppointmentControllerTest` |
-| `review` | `ReviewRepositoryTest` | `ReviewServiceTest` | `ReviewControllerTest` |
-| `favorite` | `FavoriteRepositoryTest` | `FavoriteServiceTest` | `FavoriteControllerTest` |
-
-Adicional: `Sss001ApplicationTests` verifica que el contexto de Spring Boot cargue correctamente.
-
-En total, el proyecto cuenta con **30 clases de test**.
-
-## Qué valida cada capa
-
-- **Service tests:** casos de éxito, casos en los que el repositorio no encuentra el recurso (`Optional.empty()` / `null`), y que los métodos del servicio delegan correctamente en el repositorio (`verify(repository)...`). El caso de `ProfessionalServiceTest` cubre además las 8 combinaciones de filtros del método `search()` (especialidad, ubicación, precio máximo y sus combinaciones).
-- **Repository tests:** consultas derivadas (`findByX`, `existsByX`) contra los datos sembrados en `data.sql`, así como el guardado y recuperación de nuevas entidades.
-- **Controller tests:** flujo HTTP completo con JWT real generado por `JwtService`, cubriendo:
-  - `401 Unauthorized` cuando no se envía token.
-  - `403 Forbidden` cuando el rol autenticado no tiene permiso (`@PreAuthorize`).
-  - `404 Not Found` cuando el recurso no existe.
-  - `409 Conflict` / reglas de negocio (p. ej. citas duplicadas, reseñas repetidas, rating fuera de rango).
-  - Casos de éxito (`200 OK`, `201 Created`).
-
-Las pruebas utilizan PostgreSQL mediante Testcontainers para acercar el entorno de testing al entorno real de ejecución.
-
-El objetivo de estas pruebas es verificar tanto el funcionamiento esperado como los errores de autenticación, autorización, recursos inexistentes y conflictos de negocio.
-
-## Ejecución de las pruebas
-
-Requiere Docker corriendo localmente (Testcontainers levanta un contenedor `postgres:16-alpine` para los tests de repository y controller).
-
-```bash
-# Ejecutar toda la suite de pruebas
-./mvnw test
-
-# Ejecutar una clase de test específica
-./mvnw test -Dtest=ReviewControllerTest
-
-# Ejecutar todas las pruebas de un módulo (repository + service + controller)
-./mvnw test -Dtest=com.example.sss001.review.*
-
-# Ejecutar varias clases puntuales
-./mvnw test -Dtest=PatientServiceTest,PatientRepositoryTest,ReviewServiceTest
-```
-
----
-
-# 14. GitHub y Gestión del Proyecto
-
-El desarrollo del proyecto se realiza mediante Git y GitHub.
-
-El repositorio permite mantener el historial de cambios y organizar la evolución del backend.
-
-Como referencia para el desarrollo se utilizaron los laboratorios oficiales del curso, especialmente:
-
-- Semana 04: testing con Spring Boot.
-- Semana 06: Spring Security, JWT y roles/autorización.
-
-La documentación del proyecto se mantiene en `README.md`, mientras que la API será documentada mediante una colección de Postman ubicada en la raíz del repositorio.
-
----
-
-# 15. Conclusiones y Trabajo Futuro
-
-## Logros del Proyecto
-
-Se desarrolló un backend funcional para una plataforma de servicios médicos, incorporando:
-
-- Arquitectura modular.
-- Persistencia con JPA.
-- PostgreSQL.
-- API REST.
-- DTOs.
-- Autenticación JWT.
-- Spring Security.
-- Roles y autorización.
-- Manejo global de excepciones.
-- Gestión de pacientes y profesionales.
-- Citas médicas.
-- Servicios y disponibilidad.
-- Reseñas.
-- Favoritos.
-- Pruebas automatizadas.
-- Eventos de dominio (`UserRegisteredEvent`, `AppointmentCreatedEvent`, `ReviewCreatedEvent`).
-- Procesamiento asíncrono mediante `@Async`.
-- Notificaciones de desarrollo mediante Mailpit.
-- Flujo de citas: creación, aceptación y completado.
-- Flujo de reseñas posterior a una cita completada.
-
-La solución permite representar las principales operaciones del dominio de Salud al Toque y proporciona una base preparada para ser consumida por una aplicación web o móvil.
-
-## Aprendizajes Clave
-
-El desarrollo permitió aplicar conceptos de arquitectura en capas, persistencia con JPA, diseño de APIs REST, seguridad mediante JWT, manejo de excepciones y pruebas automatizadas.
-
-También permitió comprender la importancia de separar las entidades de persistencia de los objetos utilizados por la API mediante DTOs.
-
-## Trabajo Futuro
-
-Entre las mejoras previstas se encuentran:
-
-- Añadir refresh tokens.
-- Mejorar las validaciones mediante Bean Validation.
-- Implementar paginación.
-- Añadir versionado de API.
-- Incorporar Swagger/OpenAPI.
-- Configurar CI/CD mediante GitHub Actions.
-- Desplegar el backend en una plataforma cloud.
-- Mejorar la gestión de permisos mediante `@PreAuthorize`.
-- Incorporar un sistema más completo de administración.
-
----
-
-# 16. Apéndices
-
-## A. Licencia
-
-Actualmente la licencia del proyecto debe ser definida por el equipo.
-
-**Licencia:** [Completar]
-
-## B. Referencias
-
-- CS 2031 — Desarrollo Basado en Plataforma.
-- Laboratorio Semana 04 — Testing con Spring Boot.
-- Laboratorio Semana 06 — Spring Security, JWT y roles/autorización.
-- Documentación oficial de Spring Boot.
-- Documentación oficial de Spring Security.
-- Documentación de PostgreSQL.
-- Documentación de Testcontainers.
-
-## C. Variables de Entorno
-
-Para producción se recomienda configurar los valores sensibles mediante variables de entorno:
-
-```text
-DB_HOST
-DB_PORT
-DB_NAME
-DB_USER
-DB_PASSWORD
-JWT_SECRET
-JWT_EXPIRATION
-MAIL_HOST
-MAIL_PORT
-MAIL_USERNAME
-MAIL_PASSWORD
-```
-
-No se deben almacenar contraseñas, claves JWT u otras credenciales directamente en el repositorio.
-
----
-
-## Estado actual del proyecto
-
-El backend se encuentra funcional para las operaciones principales del dominio. Actualmente incorpora eventos de dominio, procesamiento asíncrono con `@Async`, notificaciones de desarrollo mediante Mailpit, estados de aceptación y completado de citas y una colección Postman para validar el flujo completo de integración. Permanecen como trabajo futuro el deployment cloud, CI/CD y ciertas validaciones avanzadas.
+### Referencias
+- Documentación oficial de Spring Boot, Spring Security y Spring Data JPA — https://docs.spring.io
+- JJWT — https://github.com/jwtk/jjwt
+- Testcontainers — https://testcontainers.com
+- OWASP Top 10 — https://owasp.org/www-project-top-ten/
+- Material y laboratorios del curso CS 2031 (semanas 4 y 6).

@@ -5,6 +5,8 @@ import com.example.sss001.auth.dto.SignInRequest;
 import com.example.sss001.auth.dto.SignUpRequest;
 import com.example.sss001.auth.dto.TokenResponse;
 
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,14 +21,14 @@ public class AuthController {
 
     @PostMapping("/signin")
     public TokenResponse signIn(
-            @RequestBody SignInRequest request) {
+            @Valid @RequestBody SignInRequest request) {
 
         return authService.signIn(request);
     }
 
     @PostMapping("/signup")
     public TokenResponse signUp(
-            @RequestBody SignUpRequest request) {
+            @Valid @RequestBody SignUpRequest request) {
 
         return authService.signUp(request);
     }
