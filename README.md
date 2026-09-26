@@ -9,8 +9,9 @@
 - Fabricio Alberto Olaguibel Romero (202410686)
 - Saul Morales Zumaeta (202010493)
 - Alexander Muñoz Zamora (202210475)
+- John Dayron Blas Huete 
 
-**Deployment:** `[]`
+**Deployment:** en proceso 
 
 ---
 
@@ -162,7 +163,7 @@ Excepciones personalizadas, organizadas en jerarquía sobre `ApiException` (que 
 
 También se manejan excepciones de Spring: `MethodArgumentNotValidException` (400 con `fieldErrors` por campo), `HttpMessageNotReadableException`, `MethodArgumentTypeMismatchException`, `MissingServletRequestParameterException` (400), `AuthenticationException` (401), `AccessDeniedException` (403), `NoResourceFoundException` (404), `HttpRequestMethodNotSupportedException` (405), `DataIntegrityViolationException` (409) y cualquier otra como 500, que se registra en el log sin exponer detalles internos. Los accesos sin token o sin permisos se responden con 401 y 403 desde la configuración de Spring Security.
 
-Manejar los errores de forma global evita respuestas inconsistentes, filtra información sensible (stack traces) y permite que el frontend reaccione según el código HTTP.
+Manejarlos de forma global da respuestas consistentes, oculta stack traces y permite al frontend reaccionar según el código HTTP.
 
 ## 8. Medidas de Seguridad
 
@@ -170,13 +171,14 @@ Manejar los errores de forma global evita respuestas inconsistentes, filtra info
 - **Autenticación JWT stateless:** el login y el registro devuelven un token firmado (HS256) con expiración de 1 hora. `JwtAuthorizationFilter` extrae el token del header `Authorization: Bearer`, valida firma y expiración y carga el usuario con `CustomUserDetailsService`, dejándolo en el `SecurityContext`.
 - **Contraseñas con BCrypt**, con política de contraseña fuerte en el registro (8–64 caracteres, letras y números) y email único.
 - **Autorización por roles** guardados en BD: `@PreAuthorize` en cada endpoint sensible y, además, verificación de propiedad (un profesional solo modifica sus servicios, horarios y citas; un paciente solo sus reseñas y favoritos).
-- **Configuración sensible por variables de entorno:** credenciales de BD y SMTP. `.env` no se sube al repositorio.
+- **Configuración sensible por variables de entorno:** secreto JWT (`JWT_SECRET`), credenciales de BD y SMTP. `.env` no se sube al repositorio.
 
 ### Prevención de Vulnerabilidades
 - **Inyección SQL:** todo el acceso a datos usa Spring Data JPA con consultas parametrizadas; no se concatena SQL.
 - **Validación de entrada:** Bean Validation en los requests de autenticación, citas y reseñas; los datos inválidos se rechazan con 400.
 - **CSRF:** deshabilitado de forma intencional porque la API es stateless y no usa cookies de sesión.
-- **XSS:** la API solo responde JSON y las plantillas de correo Thymeleaf escapan el contenido con `th:text`.
+- **CORS:** solo se aceptan peticiones de navegador desde los orígenes del frontend (`http://localhost:3000` y `http://localhost:5173`), configurados en un `CorsConfigurationSource` y activados con `.cors()` en el `SecurityFilterChain`.
+- **XSS:** la API solo responde JSON y Thymeleaf escapa el contenido de los correos.
 
 ## 9. Eventos y Asincronía
 
@@ -204,13 +206,14 @@ Usuarios de prueba (`data.sql`, contraseña `123456`): `admin@gmail.com`, `carlo
 | Variable | Uso |
 |---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión a PostgreSQL |
+| `JWT_SECRET`, `JWT_EXPIRATION` | Firma y duración del token |
 | `NOTIFICATION_EMAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP |
 
 ## 11. GitHub & Management
 
-- **Gestión de tareas:** `[completar: describir el tablero de GitHub Projects, issues asignadas por integrante, labels y milestones por semana]`.
-- **Flujo de ramas:** `[completar: ramas feature/* y pull requests hacia main con revisión]`.
-- **GitHub Actions:** `[completar: describir el workflow si se configura; si no, indicarlo como trabajo futuro]`.
+- **Gestión de tareas:** el trabajo se dividió por módulos del dominio (autenticación, profesionales, citas, reseñas, favoritos, notificaciones) y cada tarea se asignó a un integrante con fecha límite por semana del curso.
+- **Flujo de ramas:** los cambios se desarrollan en ramas `feature/*` y `fix/*` (por ejemplo, `fix/cors-excepciones-doble-reserva`) y se integran a `main` mediante pull requests, con commits pequeños y descriptivos siguiendo Conventional Commits (`feat:`, `fix:`, `docs:`, `config:`).
+- **GitHub Actions:** pendiente como trabajo futuro; el pipeline previsto compila el proyecto y ejecuta las pruebas (`./mvnw verify`) en cada push y pull request a `main`.
 
 ## 12. Conclusión
 
