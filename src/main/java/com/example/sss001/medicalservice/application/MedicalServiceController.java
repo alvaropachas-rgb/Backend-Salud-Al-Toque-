@@ -6,7 +6,6 @@ import com.example.sss001.medicalservice.domain.MedicalServiceManager;
 import com.example.sss001.medicalservice.dto.MedicalServiceDTO;
 import com.example.sss001.professional.domain.Professional;
 import com.example.sss001.professional.domain.ProfessionalService;
-import com.example.sss001.exceptions.ResourceOwnershipException;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -134,7 +133,7 @@ public class MedicalServiceController {
                         .getId()
                         .equals(professional.getId())) {
 
-            throw new ResourceOwnershipException(
+            throw new IllegalStateException(
                     "No puedes eliminar el servicio de otro profesional"
             );
         }

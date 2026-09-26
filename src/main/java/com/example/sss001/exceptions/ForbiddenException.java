@@ -1,10 +1,8 @@
 package com.example.sss001.exceptions;
 
-import org.springframework.http.HttpStatus;
-
-public class ForbiddenException extends ApiException {
+public class ForbiddenException extends RuntimeException {
 
     public ForbiddenException(String message) {
-        super(HttpStatus.FORBIDDEN, message);
+        super(message);
     }
 }
