@@ -36,7 +36,7 @@
     },
     {
       "key": "testPassword",
-      "value": "123456"
+      "value": "Paciente123"
     },
     {
       "key": "professionalEmail",
@@ -62,7 +62,11 @@
               }
             ],
             "url": "{{baseUrl}}/auth/signup",
-            "description": "Registra un nuevo usuario (paciente). Dispara UserRegisteredEvent -> listener async en notification-*."
+            "description": "Registra un nuevo usuario (paciente). Dispara UserRegisteredEvent -> listener async en notification-*.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Paciente\",\n  \"email\": \"paciente.{{$timestamp}}@example.com\",\n  \"password\": \"Paciente123\",\n  \"phone\": \"999999999\"\n}"
+            }
           },
           "event": [
             {
@@ -90,7 +94,11 @@
               }
             ],
             "url": "{{baseUrl}}/auth/signin",
-            "description": "Login genérico. El token se guarda en la variable {{token}}."
+            "description": "Login genérico. El token se guarda en la variable {{token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"luis@gmail.com\",\n  \"password\": \"123456\"\n}"
+            }
           },
           "event": [
             {
@@ -115,7 +123,7 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-            }
+              }
             ],
             "url": "{{baseUrl}}/auth/signin",
             "description": "Login del profesional. Guarda el token en {{professionalToken}}; usado en endpoints PROFESSIONAL (medical-services, availabilities, accept/reject/complete).",
@@ -153,7 +161,7 @@
             "description": "Login del admin. Guarda el token en {{adminToken}}; usado en endpoints ADMIN (listar todas las citas, specialties, deletes).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123456\"\n}"
+              "raw": "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"123456\"\n}"
             }
           },
           "event": [
@@ -222,7 +230,7 @@
             "description": "Requiere rol ADMIN. Crea un usuario con rol (PATIENT / PROFESSIONAL / ADMIN).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Nuevo Usuario\",\n  \"email\": \"nuevo@example.com\",\n  \"password\": \"123456\",\n  \"phone\": \"999999999\",\n  \"role\": \"PATIENT\"\n}"
+              "raw": "{\n  \"name\": \"Nuevo Usuario\",\n  \"email\": \"nuevo@example.com\",\n  \"password\": \"Paciente123\",\n  \"phone\": \"999999999\",\n  \"role\": \"PATIENT\"\n}"
             }
           }
         },
@@ -472,7 +480,7 @@
             "description": "Requiere rol ADMIN. 403 si el token no es admin.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Cardiologia\"\n}"
+              "raw": "{\n  \"name\": \"Psicologia\"\n}"
             }
           }
         },
@@ -686,8 +694,8 @@
             "method": "GET",
             "header": [
               {
-              "key": "Authorization",
-              "value": "Bearer {{adminToken}}"
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": "{{baseUrl}}/appointments/professional/1",
@@ -889,8 +897,8 @@
             "method": "GET",
             "header": [
               {
-              "key": "Authorization",
-              "value": "Bearer {{token}}"
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "url": "{{baseUrl}}/favorites/my-favorites",
@@ -936,7 +944,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/",
+            "url": "{{baseUrl}}/specialties",
             "description": "Comprueba que baseUrl responde. Un 404 no necesariamente significa que Spring esté caído."
           },
           "event": [
@@ -1244,7 +1252,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/"
+            "url": "{{baseUrl}}/specialties"
           },
           "event": [
             {
