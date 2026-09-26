@@ -5,10 +5,10 @@
 **Curso:** CS 2031 Desarrollo Basado en Plataforma
 
 **Integrantes:**
-- Alvaro David Pachas Chapeton (202510345)
-- Fabricio Alberto Olaguibel Romero (202410686)
-- Saul Morales Zumaeta (202010493)
-- Alexander Muñoz Zamora (202210475)
+- Alvaro David Pachas Chapeton 
+- Fabricio Alberto Olaguibel Romero 
+- Saul Morales Zumaeta 
+- Alexander Muñoz Zamora 
 - John Dayron Blas Huete 
 
 **Deployment:** en proceso 
