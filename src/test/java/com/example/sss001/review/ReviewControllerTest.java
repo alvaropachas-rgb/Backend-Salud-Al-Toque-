@@ -161,7 +161,7 @@ class ReviewControllerTest extends AbstractContainerBaseTest {
     }
 
     @Test
-    void shouldReturn409WhenRatingIsOutOfRange() throws Exception {
+    void  shouldReturn400WhenRatingIsOutOfRange() throws Exception {
 
         // Se usa una cita inexistente para el paciente, pero antes de
         // llegar a esa verificación el controller no valida el rating,
@@ -182,6 +182,6 @@ class ReviewControllerTest extends AbstractContainerBaseTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(requestBody)
                 )
-                .andExpect(status().isForbidden());
+                .andExpect(status().isBadRequest());
     }
 }
