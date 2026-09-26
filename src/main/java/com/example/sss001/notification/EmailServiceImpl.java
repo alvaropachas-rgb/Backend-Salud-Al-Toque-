@@ -173,8 +173,6 @@ public class EmailServiceImpl implements EmailService {
                     to, subject, Thread.currentThread().getName());
 
         } catch (Exception e) {
-            // Las notificaciones no deben hacer fallar
-            // la operación principal del sistema.
             System.err.println(
                     "No se pudo enviar el correo a "
                             + to

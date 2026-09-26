@@ -29,10 +29,6 @@ public class MedicalServiceController {
         this.professionalService = professionalService;
     }
 
-    // ---------------------------------------------------------
-    // VER TODOS - PÚBLICO
-    // ---------------------------------------------------------
-
     @GetMapping
     public List<MedicalServiceDTO> findAll() {
 
@@ -41,10 +37,6 @@ public class MedicalServiceController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // ---------------------------------------------------------
-    // VER UNO - PÚBLICO
-    // ---------------------------------------------------------
 
     @GetMapping("/{id}")
     public MedicalServiceDTO findById(
@@ -63,9 +55,6 @@ public class MedicalServiceController {
         return convertToDTO(medicalService);
     }
 
-    // ---------------------------------------------------------
-    // SERVICIOS DE UN PROFESIONAL - PÚBLICO
-    // ---------------------------------------------------------
 
     @GetMapping("/professional/{professionalId}")
     public List<MedicalServiceDTO> findByProfessional(
@@ -77,10 +66,6 @@ public class MedicalServiceController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // ---------------------------------------------------------
-    // CREAR - PROFESIONAL
-    // ---------------------------------------------------------
 
     @PostMapping
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -103,12 +88,6 @@ public class MedicalServiceController {
             );
         }
 
-        /*
-         * IMPORTANTE:
-         * El profesional se obtiene del JWT.
-         * No confiamos en un professionalId enviado
-         * por el cliente.
-         */
         medicalService.setProfessional(
                 professional
         );
@@ -118,10 +97,6 @@ public class MedicalServiceController {
 
         return convertToDTO(saved);
     }
-
-    // ---------------------------------------------------------
-    // ELIMINAR - SOLO EL PROPIETARIO
-    // ---------------------------------------------------------
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -166,10 +141,6 @@ public class MedicalServiceController {
 
         service.delete(id);
     }
-
-    // ---------------------------------------------------------
-    // DTO
-    // ---------------------------------------------------------
 
     private MedicalServiceDTO convertToDTO(
             MedicalService medicalService) {

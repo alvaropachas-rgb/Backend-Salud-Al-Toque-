@@ -32,10 +32,6 @@ public class ProfessionalController {
         this.specialtyService = specialtyService;
     }
 
-    // ---------------------------------------------------------
-    // VER PROFESIONALES - PÚBLICO
-    // ---------------------------------------------------------
-
     @GetMapping
     public List<ProfessionalDTO> findAll(
             @RequestParam(required = false) String specialty,
@@ -52,10 +48,6 @@ public class ProfessionalController {
                 .toList();
     }
 
-    // ---------------------------------------------------------
-    // VER PROFESIONAL - PÚBLICO
-    // ---------------------------------------------------------
-
     @GetMapping("/{id}")
     public ProfessionalDTO findById(
             @PathVariable Long id) {
@@ -71,10 +63,6 @@ public class ProfessionalController {
 
         return convertToDTO(professional);
     }
-
-    // ---------------------------------------------------------
-    // CREAR - SOLO ADMIN
-    // ---------------------------------------------------------
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -130,10 +118,6 @@ public class ProfessionalController {
 
         return convertToDTO(saved);
     }
-
-    // ---------------------------------------------------------
-    // ACTUALIZAR - SOLO ADMIN
-    // ---------------------------------------------------------
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -201,10 +185,6 @@ public class ProfessionalController {
 
         service.delete(id);
     }
-
-    // ---------------------------------------------------------
-    // DTO
-    // ---------------------------------------------------------
 
     private ProfessionalDTO convertToDTO(
             Professional professional) {

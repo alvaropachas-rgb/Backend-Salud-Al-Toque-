@@ -40,7 +40,6 @@ public class ProfessionalService {
         boolean hasMaxPrice =
                 maxPrice != null;
 
-        // 1. Especialidad + ubicación + precio
         if (hasSpecialty &&
                 hasLocation &&
                 hasMaxPrice) {
@@ -51,7 +50,7 @@ public class ProfessionalService {
                             maxPrice
                     );
         }
-        // 2. Especialidad + ubicación
+
         if (hasSpecialty && hasLocation) {
             return repository
                     .findBySpecialtyNameIgnoreCaseAndLocationIgnoreCase(
@@ -59,27 +58,27 @@ public class ProfessionalService {
                             location
                     );
         }
-        // 3. Especialidad + precio
+
         if (hasSpecialty && hasMaxPrice) {
             return repository.findDistinctBySpecialtyNameIgnoreCaseAndMedicalServicesPriceLessThanEqual(specialty, maxPrice);
         }
-        // 4. Ubicación + precio
+
         if (hasLocation && hasMaxPrice) {
             return repository.findDistinctByLocationIgnoreCaseAndMedicalServicesPriceLessThanEqual(location, maxPrice);
         }
-        // 5. Solo especialidad
+
         if (hasSpecialty) {
             return repository.findBySpecialtyNameIgnoreCase(specialty);
         }
-        // 6. Solo ubicación
+
         if (hasLocation) {
             return repository.findByLocationIgnoreCase(location);
         }
-        // 7. Solo precio
+
         if (hasMaxPrice) {
             return repository.findDistinctByMedicalServicesPriceLessThanEqual(maxPrice);
         }
-        // 8. Sin filtros
+
         return repository.findAll();
     }
 

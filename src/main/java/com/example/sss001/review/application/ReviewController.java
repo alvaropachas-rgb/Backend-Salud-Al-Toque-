@@ -51,10 +51,6 @@ public class ReviewController {
         this.eventPublisher = eventPublisher;
     }
 
-    // =========================================================
-    // VER TODAS
-    // =========================================================
-
     @GetMapping
     public List<ReviewDTO> findAll() {
 
@@ -63,10 +59,6 @@ public class ReviewController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // =========================================================
-    // VER UNA
-    // =========================================================
 
     @GetMapping("/{id}")
     public ReviewDTO findById(
@@ -84,10 +76,6 @@ public class ReviewController {
         return convertToDTO(review);
     }
 
-    // =========================================================
-    // VER RESEÑAS DE UN PROFESIONAL
-    // =========================================================
-
     @GetMapping("/professional/{professionalId}")
     public List<ReviewDTO> findByProfessional(
             @PathVariable Long professionalId) {
@@ -99,10 +87,6 @@ public class ReviewController {
                 .toList();
     }
 
-    // =========================================================
-    // CREAR RESEÑA
-    // =========================================================
-
     @PostMapping
     @PreAuthorize("hasRole('PATIENT')")
     public ReviewDTO save(
@@ -112,10 +96,6 @@ public class ReviewController {
         String email =
                 authentication.getName();
 
-        // -------------------------------------------------
-        // OBTENER PACIENTE AUTENTICADO
-        // -------------------------------------------------
-
         Patient patient =
                 patientService.findByUserEmail(email);
 
@@ -124,10 +104,6 @@ public class ReviewController {
                     "Paciente no encontrado"
             );
         }
-
-        // -------------------------------------------------
-        // BUSCAR CITA
-        // -------------------------------------------------
 
         Appointment appointment =
                 appointmentService.findById(
@@ -140,10 +116,6 @@ public class ReviewController {
             );
         }
 
-        // -------------------------------------------------
-        // VERIFICAR PROPIETARIO
-        // -------------------------------------------------
-
         if (appointment.getPatient() == null ||
                 !appointment.getPatient()
                         .getId()
@@ -154,10 +126,6 @@ public class ReviewController {
             );
         }
 
-        // -------------------------------------------------
-        // VERIFICAR ESTADO
-        // -------------------------------------------------
-
         if (!"COMPLETADA".equals(
                 appointment.getStatus())) {
 
@@ -166,10 +134,6 @@ public class ReviewController {
             );
         }
 
-        // -------------------------------------------------
-        // VERIFICAR QUE NO EXISTA OTRA RESEÑA
-        // -------------------------------------------------
-
         if (service.existsByAppointmentId(
                 appointment.getId())) {
 
@@ -177,10 +141,6 @@ public class ReviewController {
                     "Esta cita ya tiene una reseña"
             );
         }
-
-        // -------------------------------------------------
-        // VALIDAR RATING
-        // -------------------------------------------------
 
         if (request.getRating() == null ||
                 request.getRating() < 1 ||
@@ -191,10 +151,6 @@ public class ReviewController {
             );
         }
 
-        // -------------------------------------------------
-        // OBTENER PROFESIONAL
-        // -------------------------------------------------
-
         Professional professional =
                 appointment.getProfessional();
 
@@ -203,10 +159,6 @@ public class ReviewController {
                     "La cita no tiene profesional asociado"
             );
         }
-
-        // -------------------------------------------------
-        // CREAR RESEÑA
-        // -------------------------------------------------
 
         Review review =
                 new Review();
@@ -234,15 +186,7 @@ public class ReviewController {
         Review saved =
                 service.save(review);
 
-        // -------------------------------------------------
-        // ACTUALIZAR RATING DEL PROFESIONAL
-        // -------------------------------------------------
-
         actualizarRating(professional);
-
-        // -------------------------------------------------
-        // PUBLICAR EVENTO DE RESEÑA CREADA
-        // -------------------------------------------------
 
         String professionalName =
                 professional.getUser() != null
@@ -278,10 +222,6 @@ public class ReviewController {
 
         return convertToDTO(saved);
     }
-
-    // =========================================================
-    // ACTUALIZAR RATING
-    // =========================================================
 
     private void actualizarRating(
             Professional professional) {
@@ -319,10 +259,6 @@ public class ReviewController {
                 professional
         );
     }
-
-    // =========================================================
-    // ENTITY -> DTO
-    // =========================================================
 
     private ReviewDTO convertToDTO(
             Review review) {

@@ -27,10 +27,6 @@ public class JwtService {
         );
     }
 
-    // =========================================================
-    // GENERAR TOKEN
-    // =========================================================
-
     public String generateToken(String email) {
 
         return Jwts.builder()
@@ -46,19 +42,12 @@ public class JwtService {
                 .compact();
     }
 
-    // =========================================================
-    // EXTRAER EMAIL
-    // =========================================================
 
     public String extractUsername(String token) {
 
         return getClaims(token)
                 .getSubject();
     }
-
-    // =========================================================
-    // VALIDAR TOKEN
-    // =========================================================
 
     public boolean isTokenValid(String token) {
 
@@ -75,10 +64,6 @@ public class JwtService {
             return false;
         }
     }
-
-    // =========================================================
-    // OBTENER CLAIMS
-    // =========================================================
 
     private Claims getClaims(String token) {
 

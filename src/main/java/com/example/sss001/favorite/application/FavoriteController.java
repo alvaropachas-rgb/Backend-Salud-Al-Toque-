@@ -35,10 +35,6 @@ public class FavoriteController {
         this.professionalService = professionalService;
     }
 
-    // =========================================================
-    // MIS FAVORITOS
-    // =========================================================
-
     @GetMapping("/my-favorites")
     @PreAuthorize("hasRole('PATIENT')")
     public List<FavoriteDTO> myFavorites(
@@ -61,10 +57,6 @@ public class FavoriteController {
                 .toList();
     }
 
-    // =========================================================
-    // AGREGAR FAVORITO
-    // =========================================================
-
     @PostMapping("/professional/{professionalId}")
     @PreAuthorize("hasRole('PATIENT')")
     public FavoriteDTO addFavorite(
@@ -72,10 +64,6 @@ public class FavoriteController {
             Authentication authentication) {
 
         String email = authentication.getName();
-
-        // -------------------------------------------------
-        // PACIENTE AUTENTICADO
-        // -------------------------------------------------
 
         Patient patient =
                 patientService.findByUserEmail(email);
@@ -85,10 +73,6 @@ public class FavoriteController {
                     "Paciente no encontrado"
             );
         }
-
-        // -------------------------------------------------
-        // PROFESIONAL
-        // -------------------------------------------------
 
         Professional professional =
                 professionalService.findById(
@@ -101,10 +85,6 @@ public class FavoriteController {
             );
         }
 
-        // -------------------------------------------------
-        // EVITAR DUPLICADOS
-        // -------------------------------------------------
-
         if (service.existsByPatientAndProfessional(
                 patient.getId(),
                 professional.getId())) {
@@ -113,10 +93,6 @@ public class FavoriteController {
                     "El profesional ya está en tus favoritos"
             );
         }
-
-        // -------------------------------------------------
-        // CREAR FAVORITO
-        // -------------------------------------------------
 
         Favorite favorite =
                 new Favorite();
@@ -130,10 +106,6 @@ public class FavoriteController {
         return convertToDTO(saved);
     }
 
-    // =========================================================
-    // ELIMINAR FAVORITO
-    // =========================================================
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PATIENT')")
     public void deleteFavorite(
@@ -141,10 +113,6 @@ public class FavoriteController {
             Authentication authentication) {
 
         String email = authentication.getName();
-
-        // -------------------------------------------------
-        // PACIENTE AUTENTICADO
-        // -------------------------------------------------
 
         Patient patient =
                 patientService.findByUserEmail(email);
@@ -155,10 +123,6 @@ public class FavoriteController {
             );
         }
 
-        // -------------------------------------------------
-        // FAVORITO
-        // -------------------------------------------------
-
         Favorite favorite =
                 service.findById(id);
 
@@ -167,10 +131,6 @@ public class FavoriteController {
                     "Favorito no encontrado"
             );
         }
-
-        // -------------------------------------------------
-        // VERIFICAR PROPIETARIO
-        // -------------------------------------------------
 
         if (favorite.getPatient() == null ||
                 !favorite.getPatient()
@@ -181,17 +141,8 @@ public class FavoriteController {
                     "No puedes eliminar el favorito de otro paciente"
             );
         }
-
-        // -------------------------------------------------
-        // ELIMINAR
-        // -------------------------------------------------
-
         service.delete(id);
     }
-
-    // =========================================================
-    // ENTITY -> DTO
-    // =========================================================
 
     private FavoriteDTO convertToDTO(
             Favorite favorite) {
@@ -204,18 +155,10 @@ public class FavoriteController {
         String location = null;
         Double rating = null;
 
-        // -------------------------------------------------
-        // PACIENTE
-        // -------------------------------------------------
-
         if (favorite.getPatient() != null) {
             patientId =
                     favorite.getPatient().getId();
         }
-
-        // -------------------------------------------------
-        // PROFESIONAL
-        // -------------------------------------------------
 
         if (favorite.getProfessional() != null) {
 

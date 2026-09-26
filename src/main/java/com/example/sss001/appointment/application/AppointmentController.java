@@ -61,10 +61,6 @@ public class AppointmentController {
         this.eventPublisher = eventPublisher;
     }
 
-    // =========================================================
-    // ADMIN
-    // =========================================================
-
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<AppointmentDTO> findAll() {
@@ -97,9 +93,7 @@ public class AppointmentController {
                 .toList();
     }
 
-    // =========================================================
-    // PACIENTE
-    // =========================================================
+
 
     @GetMapping("/my-appointments")
     @PreAuthorize("hasRole('PATIENT')")
@@ -132,10 +126,6 @@ public class AppointmentController {
             );
         }
 
-        // -------------------------------------------------
-        // BUSCAR SERVICIO MÉDICO
-        // -------------------------------------------------
-
         MedicalService medicalService =
                 medicalServiceManager.findById(
                         request.getMedicalServiceId()
@@ -147,10 +137,6 @@ public class AppointmentController {
             );
         }
 
-        // -------------------------------------------------
-        // OBTENER PROFESIONAL
-        // -------------------------------------------------
-
         Professional professional =
                 medicalService.getProfessional();
 
@@ -159,10 +145,6 @@ public class AppointmentController {
                     "El servicio no tiene un profesional asociado"
             );
         }
-
-        // -------------------------------------------------
-        // VALIDAR FECHA
-        // -------------------------------------------------
 
         LocalDate appointmentDate;
 
@@ -177,10 +159,6 @@ public class AppointmentController {
             );
         }
 
-        // -------------------------------------------------
-        // VALIDAR HORA
-        // -------------------------------------------------
-
         LocalTime appointmentTime;
 
         try {
@@ -194,18 +172,10 @@ public class AppointmentController {
             );
         }
 
-        // -------------------------------------------------
-        // OBTENER DÍA DE LA SEMANA
-        // -------------------------------------------------
-
         String dayOfWeek =
                 obtenerDiaEnEspanol(
                         appointmentDate.getDayOfWeek()
                 );
-
-        // -------------------------------------------------
-        // BUSCAR HORARIOS DEL PROFESIONAL
-        // -------------------------------------------------
 
         List<Availability> availabilities =
                 availabilityService
@@ -213,10 +183,6 @@ public class AppointmentController {
                                 professional.getId(),
                                 dayOfWeek
                         );
-
-        // -------------------------------------------------
-        // COMPROBAR DISPONIBILIDAD
-        // -------------------------------------------------
 
         boolean available = false;
 
@@ -247,10 +213,6 @@ public class AppointmentController {
             );
         }
 
-        // -------------------------------------------------
-        // COMPROBAR SI YA ESTÁ RESERVADO
-        // -------------------------------------------------
-
         boolean alreadyBooked =
                 service.existsByProfessionalAndDateAndTime(
                         professional.getId(),
@@ -264,10 +226,6 @@ public class AppointmentController {
                     "El horario seleccionado ya está reservado"
             );
         }
-
-        // -------------------------------------------------
-        // CREAR CITA
-        // -------------------------------------------------
 
         Appointment appointment =
                 new Appointment();
@@ -300,18 +258,12 @@ public class AppointmentController {
                 medicalService
         );
 
-        // Guardamos el precio actual del servicio
-        // como snapshot de la cita.
         appointment.setPrice(
                 medicalService.getPrice()
         );
 
         Appointment saved =
                 service.save(appointment);
-
-        // -------------------------------------------------
-        // PUBLICAR EVENTO DE CITA CREADA
-        // -------------------------------------------------
 
         String patientName =
                 patient.getUser() != null
@@ -359,10 +311,6 @@ public class AppointmentController {
         return convertToDTO(saved);
     }
 
-    // =========================================================
-    // PROFESIONAL
-    // =========================================================
-
     @GetMapping("/my-professional-appointments")
     @PreAuthorize("hasRole('PROFESSIONAL')")
     public List<AppointmentDTO> myProfessionalAppointments(
@@ -375,10 +323,6 @@ public class AppointmentController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // =========================================================
-    // CONSULTA INDIVIDUAL
-    // =========================================================
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -397,9 +341,6 @@ public class AppointmentController {
         return convertToDTO(appointment);
     }
 
-    // =========================================================
-    // CAMBIAR ESTADO - ACEPTAR
-    // =========================================================
 
     @PatchMapping("/{id}/accept")
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -448,10 +389,6 @@ public class AppointmentController {
         return convertToDTO(updated);
     }
 
-    // =========================================================
-    // CAMBIAR ESTADO - RECHAZAR
-    // =========================================================
-
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasRole('PROFESSIONAL')")
     public AppointmentDTO reject(
@@ -498,10 +435,6 @@ public class AppointmentController {
 
         return convertToDTO(updated);
     }
-
-    // =========================================================
-    // CAMBIAR ESTADO - COMPLETAR
-    // =========================================================
 
     @PatchMapping("/{id}/complete")
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -550,10 +483,6 @@ public class AppointmentController {
         return convertToDTO(updated);
     }
 
-    // =========================================================
-    // DELETE
-    // =========================================================
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(
@@ -570,10 +499,6 @@ public class AppointmentController {
 
         service.delete(id);
     }
-
-    // =========================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================
 
     private void verificarPropietario(
             Appointment appointment,
@@ -617,10 +542,6 @@ public class AppointmentController {
                     "DOMINGO";
         };
     }
-
-    // =========================================================
-    // ENTITY -> DTO
-    // =========================================================
 
     private AppointmentDTO convertToDTO(
             Appointment appointment) {

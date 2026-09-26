@@ -71,6 +71,7 @@ public class GlobalExceptionHandler {
                 "El parámetro '" + exception.getName() + "' tiene un formato inválido", request, null);
     }
 
+<<<<<<< HEAD
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
             IllegalArgumentException exception, HttpServletRequest request) {
@@ -83,6 +84,8 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", request, null);
     }
 
+=======
+>>>>>>> 0d1cac2 (Entrega Final)
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
             AccessDeniedException exception, HttpServletRequest request) {
@@ -90,6 +93,7 @@ public class GlobalExceptionHandler {
                 "No tienes permisos para realizar esta operación", request, null);
     }
 
+<<<<<<< HEAD
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleDataIntegrity(
             DataIntegrityViolationException exception, HttpServletRequest request) {
@@ -108,6 +112,48 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleNoResource(
             NoResourceFoundException exception, HttpServletRequest request) {
         return buildResponse(HttpStatus.NOT_FOUND, "Ruta no encontrada", request, null);
+=======
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(
+            ForbiddenException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(
+            ConflictException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(
+            ResponseStatusException exception,
+            HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.valueOf(
+                exception.getStatusCode().value()
+        );
+
+        return buildResponse(
+                status,
+                exception.getReason() != null
+                        ? exception.getReason()
+                        : status.getReasonPhrase(),
+                request
+        );
+>>>>>>> 0d1cac2 (Entrega Final)
     }
 
     @ExceptionHandler(ErrorResponseException.class)
@@ -125,6 +171,7 @@ public class GlobalExceptionHandler {
                 "Ocurrió un error interno en el servidor", request, null);
     }
 
+<<<<<<< HEAD
     private ResponseEntity<ErrorResponseDTO> buildResponse(
             HttpStatus status, String message, HttpServletRequest request,
             Map<String, String> fieldErrors) {
@@ -135,6 +182,19 @@ public class GlobalExceptionHandler {
                 message,
                 request.getRequestURI(),
                 fieldErrors
+=======
+    private ResponseEntity<Map<String, Object>> buildResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
+
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", message,
+                "path", request.getRequestURI()
+>>>>>>> 0d1cac2 (Entrega Final)
         );
         return ResponseEntity.status(status).body(body);
     }

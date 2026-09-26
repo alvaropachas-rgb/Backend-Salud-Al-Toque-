@@ -1,4 +1,3 @@
---Password: 123456
 INSERT INTO users
 (name, email, password, phone, role)
 VALUES

@@ -45,10 +45,6 @@ public class JwtAuthorizationFilter
         String authorizationHeader =
                 request.getHeader("Authorization");
 
-        // -------------------------------------------------
-        // NO HAY TOKEN
-        // -------------------------------------------------
-
         if (authorizationHeader == null
                 || !authorizationHeader.startsWith("Bearer ")) {
 
@@ -63,10 +59,6 @@ public class JwtAuthorizationFilter
         String token =
                 authorizationHeader.substring(7);
 
-        // -------------------------------------------------
-        // TOKEN INVÁLIDO
-        // -------------------------------------------------
-
         if (!jwtService.isTokenValid(token)) {
 
             filterChain.doFilter(
@@ -76,10 +68,6 @@ public class JwtAuthorizationFilter
 
             return;
         }
-
-        // -------------------------------------------------
-        // OBTENER EMAIL
-        // -------------------------------------------------
 
         String email;
 
@@ -97,10 +85,6 @@ public class JwtAuthorizationFilter
 
             return;
         }
-
-        // -------------------------------------------------
-        // EVITAR SOBRESCRIBIR AUTENTICACIÓN
-        // -------------------------------------------------
 
         if (SecurityContextHolder
                 .getContext()

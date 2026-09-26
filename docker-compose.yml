@@ -1,3 +1,6 @@
+
+    #ports:
+     # - "5434:5432"
 services:
 
   postgres:
@@ -5,12 +8,12 @@ services:
     container_name: sss001-db
 
     ports:
-      - "5434:5432"
+      - "${DB_PORT:-5434}:5432"
 
     environment:
-      POSTGRES_DB: sss001
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-sss001}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
 
     volumes:
       - postgres_data:/var/lib/postgresql/data

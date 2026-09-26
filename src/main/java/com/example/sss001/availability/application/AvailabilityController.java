@@ -28,10 +28,6 @@ public class AvailabilityController {
         this.professionalService = professionalService;
     }
 
-    // ---------------------------------------------------------
-    // VER TODAS - PÚBLICO
-    // ---------------------------------------------------------
-
     @GetMapping
     public List<AvailabilityDTO> findAll() {
 
@@ -40,10 +36,6 @@ public class AvailabilityController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // ---------------------------------------------------------
-    // VER UNA - PÚBLICO
-    // ---------------------------------------------------------
 
     @GetMapping("/{id}")
     public AvailabilityDTO findById(
@@ -62,10 +54,6 @@ public class AvailabilityController {
         return convertToDTO(availability);
     }
 
-    // ---------------------------------------------------------
-    // VER DISPONIBILIDAD DE PROFESIONAL - PÚBLICO
-    // ---------------------------------------------------------
-
     @GetMapping("/professional/{professionalId}")
     public List<AvailabilityDTO> findByProfessional(
             @PathVariable Long professionalId) {
@@ -76,10 +64,6 @@ public class AvailabilityController {
                 .map(this::convertToDTO)
                 .toList();
     }
-
-    // ---------------------------------------------------------
-    // CREAR - PROFESIONAL
-    // ---------------------------------------------------------
 
     @PostMapping
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -101,10 +85,6 @@ public class AvailabilityController {
             );
         }
 
-        /*
-         * El profesional se obtiene del usuario
-         * autenticado, no del JSON enviado.
-         */
         availability.setProfessional(
                 professional
         );
@@ -114,10 +94,6 @@ public class AvailabilityController {
 
         return convertToDTO(saved);
     }
-
-    // ---------------------------------------------------------
-    // ELIMINAR - SOLO EL PROPIETARIO
-    // ---------------------------------------------------------
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROFESSIONAL')")
@@ -161,10 +137,6 @@ public class AvailabilityController {
 
         service.delete(id);
     }
-
-    // ---------------------------------------------------------
-    // DTO
-    // ---------------------------------------------------------
 
     private AvailabilityDTO convertToDTO(
             Availability availability) {

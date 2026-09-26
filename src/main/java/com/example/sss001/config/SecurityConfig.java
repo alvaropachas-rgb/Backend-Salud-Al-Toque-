@@ -36,10 +36,6 @@ public class SecurityConfig {
                 jwtAuthorizationFilter;
     }
 
-    // =========================================================
-    // PASSWORD ENCODER
-    // =========================================================
-
     @Bean
     public PasswordEncoder passwordEncoder() {
 
@@ -63,10 +59,6 @@ public class SecurityConfig {
         return source;
     }
 
-    // =========================================================
-    // AUTHENTICATION MANAGER
-    // =========================================================
-
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration)
@@ -75,16 +67,13 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
-    // =========================================================
-    // SECURITY FILTER CHAIN
-    // =========================================================
-
     @Bean
     public SecurityFilterChain filterChain(
             org.springframework.security.config.annotation.web.builders.HttpSecurity http)
             throws Exception {
 
         http
+<<<<<<< HEAD
                 // -------------------------------------------------
                 // CORS
                 // -------------------------------------------------
@@ -93,62 +82,33 @@ public class SecurityConfig {
                 // -------------------------------------------------
                 // CSRF
                 // -------------------------------------------------
+=======
+>>>>>>> 0d1cac2 (Entrega Final)
                 .csrf(csrf ->
                         csrf.disable()
                 )
 
-                // -------------------------------------------------
-                // SESIONES
-                // -------------------------------------------------
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                // -------------------------------------------------
-                // AUTORIZACIÓN
-                // -------------------------------------------------
                 .authorizeHttpRequests(auth -> auth
 
-                        // ===============================
-                        // PÚBLICO
-                        // ===============================
-                        .requestMatchers(
-                                "/auth/**"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                "/professionals/**"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                "/specialties/**"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.GET, "/medical-services/**"
-                        ).permitAll()
-
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/professionals/**").permitAll()
+                        .requestMatchers("/specialties/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/medical-services/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/availabilities/**").permitAll()
-
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
-
-                        // ===============================
-                        // TODO LO DEMÁS
-                        // ===============================
 
                         .anyRequest().authenticated()
                 )
 
-                // -------------------------------------------------
-                // 401 / 403
-                // -------------------------------------------------
                 .exceptionHandling(exception -> exception
-
                         .authenticationEntryPoint(
                                 (request, response, authException) -> {
-
                                     response.sendError(
                                             HttpServletResponse.SC_UNAUTHORIZED,
                                             "No autenticado"
@@ -158,7 +118,6 @@ public class SecurityConfig {
 
                         .accessDeniedHandler(
                                 (request, response, accessDeniedException) -> {
-
                                     response.sendError(
                                             HttpServletResponse.SC_FORBIDDEN,
                                             "No tienes permisos para realizar esta operación"
@@ -167,9 +126,6 @@ public class SecurityConfig {
                         )
                 )
 
-                // -------------------------------------------------
-                // JWT FILTER
-                // -------------------------------------------------
                 .addFilterBefore(
                         jwtAuthorizationFilter,
                         UsernamePasswordAuthenticationFilter.class
